@@ -469,7 +469,7 @@ def fetch_all_data() -> dict:
     poem1, poem2 = get_poetic_sentences()
 
     return {
-        "date": today.strftime("%Y年%m月%d日"),
+        "date": f"{today.year}年{today.month:02d}月{today.day:02d}日",
         "weekday": ["周一", "周二", "周三", "周四", "周五", "周六", "周日"][today.weekday()],
         "weather_list": weather_list,
         "restriction": restriction,
