@@ -181,6 +181,24 @@ def get_weather_hefeng_supplement(location_id: str) -> dict:
     return result
 
 
+def get_weather_qweather_fallback(location_id: str) -> dict:
+    """和风天气回退——彩之颜温度获取失败时，用和风获取温度/天气/湿度"""
+    url = f"https://{QWEATHER_API_HOST}/v7/weather/now"
+    params = {"location": location_id, "key": QWEATHER_API_KEY, "lang": "zh"}
+    result = {"temp": "--", "text": "--", "humidity": "--"}
+    try:
+        resp = requests.get(url, params=params, timeout=15)
+        data = resp.json()
+        if data.get("code") == "200" and data.get("now"):
+            now = data["now"]
+            result["temp"] = now.get("temp", "--")
+            result["text"] = now.get("text", "--")
+            result["humidity"] = now.get("humidity", "--")
+    except Exception:
+        pass
+    return result
+
+
 def get_social_observation(lat: float, lon: float) -> dict:
     """使用彩之颜社会化观测API获取观测数据"""
     url = "https://api.caiyunapp.com/v1/social_observation"
@@ -212,6 +230,16 @@ def get_weather(lat: float, lon: float, location_id: str = "") -> dict:
     """
     # 彩之颜（主数据源）
     caiyun_data = get_weather_caiyun(lat, lon)
+
+    # 彩之颜温度失败时，和风天气回退
+    if caiyun_data.get("temp") == "--" and location_id:
+        qweather_fb = get_weather_qweather_fallback(location_id)
+        if qweather_fb.get("temp") != "--":
+            caiyun_data["temp"] = qweather_fb["temp"]
+        if qweather_fb.get("text") != "--" and caiyun_data.get("text") == "--":
+            caiyun_data["text"] = qweather_fb["text"]
+        if qweather_fb.get("humidity") != "--":
+            caiyun_data["humidity"] = qweather_fb["humidity"]
 
     # 构建结果
     result = {
