@@ -209,6 +209,25 @@ def get_weather_qweather_fallback(location_id: str) -> dict:
     return result
 
 
+def get_weather_juhe(city_name: str) -> dict:
+    """聚合数据天气——第三备用数据源"""
+    url = "http://apis.juhe.cn/simpleWeather/query"
+    params = {"city": city_name, "key": JUHE_API_KEY}
+    result = {"temp": "--", "text": "--", "humidity": "--"}
+    try:
+        resp = requests.get(url, params=params, timeout=10)
+        data = resp.json()
+        if data.get("error_code") == 0 and data.get("result"):
+            r = data["result"]
+            live = r.get("realtime", {})
+            result["temp"] = live.get("temperature", "--")
+            result["text"] = live.get("info", "--")
+            result["humidity"] = live.get("humidity", "--")
+    except Exception:
+        pass
+    return result
+
+
 def get_social_observation(lat: float, lon: float) -> dict:
     """使用彩之颜社会化观测API获取观测数据"""
     url = "https://api.caiyunapp.com/v1/social_observation"
@@ -232,63 +251,81 @@ def get_social_observation(lat: float, lon: float) -> dict:
     return result
 
 
-def get_weather(lat: float, lon: float, location_id: str = "") -> dict:
+def get_weather(lat: float, lon: float, location_id: str = "", city_name: str = "") -> dict:
     """
-    获取单个城市的天气信息（双 API 交替轮询，永不放弃）
-    策略：彩云 → 最多3次 → 失败 → 和风 → 最多3次 → 失败 → 彩云 → 最多3次 → ... 交替直到有数据
-    每次失败后等 5 秒，最多总请求 6 次（约 30 秒），全部失败才放弃
+    获取单个城市的天气信息（三 API 交替轮询，永不放弃）
+    策略：彩云 × 3 → 和风 × 3 → 聚合 × 3 → 彩云 × 3 → ... 直到有数据
+    每次失败后等 5 秒，最多总请求 9 次（约 45 秒），全部失败才放弃
     """
-    # 数据容器：彩云管大部分字段，和风仅补充温度/天气/湿度
     caiyun_data = {"temp": "--", "text": "--", "humidity": "--"}
     qweather_data = {"temp": "--", "text": "--", "humidity": "--"}
-    qweather_success = False
+    juhe_data = {"temp": "--", "text": "--", "humidity": "--"}
 
-    current_api = "caiyun"
-    caiyun_retries = 0
-    qweather_retries = 0
+    qweather_success = False
+    juhe_success = False
+
+    # API 轮询顺序：彩云 → 和风 → 聚合 → 循环
+    apis = ["caiyun", "qweather", "juhe"]
+    api_retries = {"caiyun": 0, "qweather": 0, "juhe": 0}
+    api_idx = 0
     total_retries = 0
 
     while total_retries < MAX_CITY_TOTAL_RETRIES:
-        if current_api == "caiyun" and caiyun_retries < MAX_SINGLE_API_RETRIES:
-            caiyun_retries += 1
+        current_api = apis[api_idx % len(apis)]
+
+        if current_api == "caiyun" and api_retries["caiyun"] < MAX_SINGLE_API_RETRIES:
+            api_retries["caiyun"] += 1
             total_retries += 1
             data = get_weather_caiyun(lat, lon)
             if data.get("temp") != "--":
                 caiyun_data = data
-                # 彩云拿到温度就停了（主数据源完整）
                 break
-            if caiyun_retries < MAX_SINGLE_API_RETRIES:
+            if api_retries["caiyun"] < MAX_SINGLE_API_RETRIES:
                 time.sleep(API_RETRY_DELAY)
-            current_api = "qweather"
+            api_idx += 1
 
-        elif current_api == "qweather" and qweather_retries < MAX_SINGLE_API_RETRIES and location_id:
-            qweather_retries += 1
+        elif current_api == "qweather" and api_retries["qweather"] < MAX_SINGLE_API_RETRIES and location_id:
+            api_retries["qweather"] += 1
             total_retries += 1
             fb = get_weather_qweather_fallback(location_id)
             if fb.get("temp") != "--":
                 qweather_data = fb
                 qweather_success = True
-                # 和风拿到温度就停了
                 break
-            if qweather_retries < MAX_SINGLE_API_RETRIES:
+            if api_retries["qweather"] < MAX_SINGLE_API_RETRIES:
                 time.sleep(API_RETRY_DELAY)
-            current_api = "caiyun"
-        else:
-            # 本轮该 API 次数用完，切换
-            if current_api == "caiyun":
-                current_api = "qweather"
-            else:
-                current_api = "caiyun"
+            api_idx += 1
 
-    # 合并：优先用彩云数据，彩云温度失败则用和风兜底
+        elif current_api == "juhe" and api_retries["juhe"] < MAX_SINGLE_API_RETRIES and city_name:
+            api_retries["juhe"] += 1
+            total_retries += 1
+            fb = get_weather_juhe(city_name)
+            if fb.get("temp") != "--":
+                juhe_data = fb
+                juhe_success = True
+                break
+            if api_retries["juhe"] < MAX_SINGLE_API_RETRIES:
+                time.sleep(API_RETRY_DELAY)
+            api_idx += 1
+
+        else:
+            api_idx += 1
+
+    # 合并：优先用彩云数据，彩云失败则用和风，再失败则用聚合
     merged = dict(caiyun_data)
-    source = "彩云" if merged.get("temp") != "--" else ("和风" if qweather_success else "无数据")
+    source = "彩云" if merged.get("temp") != "--" else ("和风" if qweather_success else ("聚合" if juhe_success else "无数据"))
     if merged.get("temp") == "--" and qweather_success:
         merged["temp"] = qweather_data.get("temp", "--")
         if merged.get("text") == "--":
             merged["text"] = qweather_data.get("text", "--")
         if merged.get("humidity") == "--":
             merged["humidity"] = qweather_data.get("humidity", "--")
+    if merged.get("temp") == "--" and juhe_success:
+        merged["temp"] = juhe_data.get("temp", "--")
+        if merged.get("text") == "--":
+            merged["text"] = juhe_data.get("text", "--")
+        if merged.get("humidity") == "--":
+            merged["humidity"] = juhe_data.get("humidity", "--")
 
     # 构建结果（merged 优先彩云，彩云温度失败时用和风兜底）
     result = {
@@ -354,8 +391,9 @@ def get_all_weather() -> list:
         try:
             lat = city.get("lat")
             lon = city.get("lon")
-            location_id = city.get("location_id", "")  # 和风天气用的旧字段，兼容
-            w = get_weather(lat, lon, location_id)
+            location_id = city.get("location_id", "")
+            city_name = city.get("name", "")
+            w = get_weather(lat, lon, location_id, city_name)
             w["city"] = city["name"]
             results.append(w)
         except Exception as e:
