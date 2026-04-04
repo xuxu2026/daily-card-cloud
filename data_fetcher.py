@@ -251,6 +251,32 @@ def get_social_observation(lat: float, lon: float) -> dict:
     return result
 
 
+def is_weather_complete(data: dict) -> bool:
+    """
+    检查天气数据是否完整（任一关键字段缺失则视为不完整，需降级换 API）
+    """
+    result = (
+        data.get("temp") != "--"
+        and data.get("text") != "--"
+        and data.get("humidity") != "--"
+        and data.get("windDir") != "--"
+        and data.get("windScale") != "--"
+    )
+    daily_temp = data.get("daily", {}).get("temperature", [])
+    daily_sky = data.get("daily", {}).get("skycon", [])
+    if not daily_temp or len(daily_temp) < 1:
+        result = False
+    elif daily_temp[0].get("max") in (None, 0, "") or daily_temp[0].get("min") in (None, 0, ""):
+        result = False
+    elif not daily_sky or not daily_sky[0].get("value"):
+        result = False
+    elif len(daily_temp) >= 2:
+        t1 = daily_temp[1]
+        if t1.get("max") in (None, 0, "") or t1.get("min") in (None, 0, ""):
+            result = False
+    return result
+
+
 def get_weather(lat: float, lon: float, location_id: str = "", city_name: str = "") -> dict:
     """
     获取单个城市的天气信息（三 API 交替轮询，永不放弃）
@@ -277,9 +303,10 @@ def get_weather(lat: float, lon: float, location_id: str = "", city_name: str = 
             api_retries["caiyun"] += 1
             total_retries += 1
             data = get_weather_caiyun(lat, lon)
-            if data.get("temp") != "--":
+            if is_weather_complete(data):
                 caiyun_data = data
                 break
+            # 不完整：继续尝试下一个 API
             if api_retries["caiyun"] < MAX_SINGLE_API_RETRIES:
                 time.sleep(API_RETRY_DELAY)
             api_idx += 1
