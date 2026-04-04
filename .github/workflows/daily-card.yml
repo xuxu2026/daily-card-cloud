@@ -22,6 +22,12 @@ jobs:
         run: |
           pip install playwright imgkit python-dateutil requests Pillow
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\ms-playwright
+          key: playwright-${{ hashFiles('.github/workflows/daily-card.yml') }}
+
       - name: Install Playwright browsers
         run: python -m playwright install chromium --with-deps
 
