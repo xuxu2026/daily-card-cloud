@@ -29,7 +29,11 @@ def bj_day():
 
 # 企业微信机器人 Webhook URL
 # 格式: https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=your-key
-WECOM_WEBHOOK_URL = os.environ.get("WECOM_WEBHOOK_URL", "")
+# ⚠️ 如需更换机器人，请同步更新 GitHub Secrets 和此处默认值
+WECOM_WEBHOOK_URL = os.environ.get(
+    "WECOM_WEBHOOK_URL",
+    "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=4a41bb57-cabb-4d9a-a7be-1d33064bf98b"
+)
 
 # 彩之颜天气 API（主数据源）
 # 申请地址: https://www.caiyunapp.com/
@@ -55,3 +59,7 @@ OUTPUT_IMAGE_PATH = "C:/Users/30286/WorkBuddy/20260403180838/daily-card/output/d
 
 # 小红书 Cookie（用于抓取内容）
 XHS_COOKIE = os.environ.get("XHS_COOKIE", "")
+
+# 聚合数据天气 API（第三备用数据源）
+# 申请地址: https://www.juhe.cn/
+JUHE_API_KEY = os.environ.get("JUHE_API_KEY", "9aa7a6306d7bb369e673afc85ea67dfd")
