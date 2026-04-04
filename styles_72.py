@@ -1138,17 +1138,52 @@ def is_holiday(date=None):
     if date is None:
         date = bj_date()
     m, d = date.month, date.day
+    # 2026 年法定节假日
+    # 调休安排：春节 1/28-2/3 放假 2/4 上班，清明 4/4-4/6 放假 4/7 上班
+    #          劳动节 5/1-5/5 放假 5/6 上班，端午 6/27-6/29 放假 6/30 上班
+    #          中秋+国庆 10/1-10/8 放假，9/28 和 10/10 上班
     holidays = {
-        (1, 1): 'NewYearDay', (1, 28): 'SpringFestival01', (1, 29): 'SpringFestival02',
-        (2, 12): 'Lantern01', (2, 13): 'Lantern02', (2, 14): 'Valentine01',
+        # 元旦
+        (1, 1): 'NewYearDay',
+        # 春节
+        (1, 28): 'SpringFestival01', (1, 29): 'SpringFestival02',
+        (1, 30): 'SpringFestival03', (1, 31): 'SpringFestival04',
+        (2, 1): 'SpringFestival05', (2, 2): 'SpringFestival06', (2, 3): 'SpringFestival07',
+        # 元宵
+        (2, 12): 'Lantern01', (2, 13): 'Lantern02',
+        # 情人节
+        (2, 14): 'Valentine01',
+        # 妇女节
         (3, 8): 'WomensDay',
-        (4, 5): 'Qingming01', (4, 6): 'Qingming02',
-        (5, 1): 'LaborDay', (5, 31): 'DragonBoat01', (6, 1): 'ChildrensDay',
-        (8, 25): 'Qixi01', (9, 10): 'TeachersDay01',
-        (9, 28): 'MidAutumn01', (10, 1): 'NationalDay01',
-        (10, 11): 'DoubleNinth01', (10, 31): 'Halloween01',
+        # 清明
+        (4, 4): 'Qingming01', (4, 5): 'Qingming02', (4, 6): 'Qingming03',
+        # 劳动节
+        (5, 1): 'LaborDay', (5, 2): 'LaborDay02', (5, 3): 'LaborDay03',
+        (5, 4): 'LaborDay04', (5, 5): 'LaborDay05',
+        # 儿童节
+        (6, 1): 'ChildrensDay',
+        # 端午
+        (6, 27): 'DragonBoat01', (6, 28): 'DragonBoat02', (6, 29): 'DragonBoat03',
+        # 七夕
+        (8, 25): 'Qixi01',
+        # 教师节
+        (9, 10): 'TeachersDay01',
+        # 中秋+国庆（9/28上班，10/1-10/8放假，10/10上班）
+        (9, 28): 'NationalDayWorkday',
+        (10, 1): 'NationalDay01', (10, 2): 'NationalDay02', (10, 3): 'NationalDay03',
+        (10, 4): 'NationalDay04', (10, 5): 'NationalDay05', (10, 6): 'NationalDay06',
+        (10, 7): 'NationalDay07', (10, 8): 'NationalDay08',
+        (10, 10): 'NationalDayWorkday02',
+        # 重阳
+        (10, 11): 'DoubleNinth01',
+        # 万圣
+        (10, 31): 'Halloween01',
+        # 感恩
         (11, 24): 'Thanksgiving01',
-        (12, 25): 'Christmas01', (12, 31): 'NewYearEve',
+        # 圣诞
+        (12, 25): 'Christmas01',
+        # 跨年
+        (12, 31): 'NewYearEve',
     }
     return (m, d) in holidays
 
