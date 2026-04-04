@@ -1090,21 +1090,23 @@ def generate_css(style):
 
   .indices-row {{
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
-    gap: 5px;
+    gap: 4px;
     margin-top: 5px;
     padding-top: 5px;
     border-top: 1px dashed {style['secondary']}30;
+    overflow: hidden;
   }}
 
   .idx-item {{
     font-family: {style['label_font']};
-    font-size: 13px;
+    font-size: 12px;
     color: {style['text_light']};
     background: {style['secondary']}15;
-    padding: 2px 7px;
+    padding: 2px 4px;
     border-radius: 4px;
+    white-space: nowrap;
   }}
 
   .restriction-wrap {{
