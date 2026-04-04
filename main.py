@@ -96,8 +96,9 @@ def main():
             weather_invalid = []
             for w in data.get('weather_list', []):
                 temp = w.get('now', {}).get('temp', '--')
+                source = w.get('temp_source', '未知')
                 if temp == '--' or temp is None:
-                    weather_invalid.append(w.get('city', '?'))
+                    weather_invalid.append(f"{w.get('city', '?')}(来源:{source})")
             if not weather_invalid:
                 print(f"  ✓ 数据获取完成 - {data['date']} {data['weekday']}")
                 break
