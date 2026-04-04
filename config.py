@@ -2,6 +2,30 @@
 # 配置文件 - 支持本地和 GitHub Actions 环境变量
 # =============================================================
 import os
+from datetime import datetime, timezone, timedelta
+
+# ─────────────────────────────────────────────────────────────
+# 统一北京时间工具（解决 GitHub Actions UTC vs 北京时间不一致问题）
+# 整个项目所有日期计算都用这个，不直接用 datetime.date.today()
+# ─────────────────────────────────────────────────────────────
+BJ_TZ = timezone(timedelta(hours=8))
+
+def bj_now():
+    """返回北京时间 datetime（带时区）"""
+    return datetime.now(timezone.utc).astimezone(BJ_TZ)
+
+def bj_date():
+    """返回北京时间的日期（date 对象）"""
+    return bj_now().date()
+
+def bj_year():
+    return bj_now().year
+
+def bj_month():
+    return bj_now().month
+
+def bj_day():
+    return bj_now().day
 
 # 企业微信机器人 Webhook URL
 # 格式: https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=your-key
