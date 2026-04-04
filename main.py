@@ -19,7 +19,7 @@ sys.path.insert(0, str(script_dir))
 from data_fetcher import fetch_all_data
 from card_generator import generate_image, generate_images, get_holiday_styles, get_style_for_date
 from wecom_pusher import send_image_to_wecom, send_text_to_wecom
-from config import OUTPUT_IMAGE_PATH
+from config import OUTPUT_IMAGE_PATH, bj_date
 
 # 上次推送图片的MD5记录（用于去重）
 LAST_SENT_MD5_FILE = Path(__file__).parent / ".last_sent_md5"
@@ -110,7 +110,7 @@ def main():
             print(f"  ⚠ 天气数据不完整，但仍继续生成（使用 fallback 数据）")
 
         # Step 2: 生成图片
-        today = datetime.date.today()
+        today = bj_date()
         holiday_styles = get_holiday_styles(today)
         
         if holiday_styles and len(holiday_styles) > 1:
