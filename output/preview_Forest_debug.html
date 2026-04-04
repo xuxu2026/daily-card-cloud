@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Noto+Sans+SC:wght@300;400&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 750px;
+    min-height: 1050px;
+    background: linear-gradient(160deg, #f0f7f2 0%, #e5f0e8 20%, #d8ebda 40%, #c8e4ca 60%, #b8dab8 80%, #a8d0a8 100%);
+    font-family: 'Noto Serif SC', serif;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .bg-layer {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .decor-svg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    padding: 44px 38px 40px;
+  }
+
+  /* 头部 */
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .date-label {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 42px;
+    font-weight: 400;
+    color: #2D5A3D;
+    letter-spacing: 3px;
+    margin-bottom: 4px;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.10);
+  }
+
+  .greeting {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    font-weight: 300;
+    color: rgba(45,90,61,0.50);
+    letter-spacing: 6px;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+
+  .weekday-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #5A8F6A, #8FBC8F);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 3px;
+    padding: 4px 18px;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  }
+
+  /* 装饰分隔 */
+  .divider {
+    text-align: center;
+    margin: 20px 0 24px;
+    color: rgba(45,90,61,0.50);
+    font-size: 13px;
+    letter-spacing: 12px;
+    font-family: serif;
+  }
+
+  /* 诗意文案 */
+  .poem-wrap {
+    text-align: center;
+    margin-bottom: 26px;
+    padding: 22px 24px 20px;
+    background: rgba(255,255,255,0.55);
+    border-radius: 20px;
+    border: 1px solid rgba(140,200,150,0.40);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  }
+
+  .poem-text {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: #3D6A4D;
+    line-height: 2.2;
+    letter-spacing: 2px;
+    font-style: italic;
+  }
+
+  .poem-text + .poem-text {
+    margin-top: 8px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(0,0,0,0.08);
+  }
+
+  /* 小标签 */
+  .section-label {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    color: rgba(45,90,61,0.50);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 12px;
+  }
+
+  /* 天气卡片 */
+  .weather-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+
+  .city-card {
+    background: rgba(255,255,255,0.55);
+    border-radius: 20px;
+    padding: 14px 8px 12px;
+    text-align: center;
+    border: 1px solid rgba(140,200,150,0.40);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+  }
+
+  .city-name {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(45,90,61,0.50);
+    letter-spacing: 3px;
+    margin-bottom: 6px;
+  }
+
+  .temp {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 30px;
+    font-weight: 700;
+    color: #2D5A3D;
+    line-height: 1;
+  }
+
+  .weather-icon-lg {
+    font-size: 20px;
+    margin-bottom: 2px;
+  }
+
+  .weather-text {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 10px;
+    color: rgba(45,90,61,0.50);
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+  }
+
+  .weather-detail {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 10px;
+    color: rgba(45,90,61,0.50);
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
+  }
+
+  .weather-tags {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin-bottom: 5px;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 9px;
+    padding: 1px 7px;
+    border-radius: 10px;
+    letter-spacing: 0.5px;
+  }
+
+  .air-tag {
+    background: rgba(100,180,120,0.20);
+    color: rgba(40,120,70,0.80);
+  }
+
+  .uv-line, .dress-line {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 9px;
+    color: rgba(45,90,61,0.50);
+    letter-spacing: 0.5px;
+    line-height: 1.6;
+    text-align: left;
+    padding-left: 4px;
+  }
+
+  /* 限号 */
+  .restriction-wrap {
+    background: rgba(255,255,255,0.55);
+    border-radius: 20px;
+    padding: 14px 18px;
+    margin-bottom: 22px;
+    border: 1px solid rgba(140,200,150,0.40);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+  }
+
+  .restriction-title {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    color: rgba(45,90,61,0.50);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  .r-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px dashed rgba(0,0,0,0.06);
+  }
+
+  .r-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .r-day {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 11px;
+    color: rgba(45,90,61,0.50);
+    letter-spacing: 1px;
+  }
+
+  .r-num {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 12px;
+    color: #2D5A3D;
+    font-weight: 600;
+    background: rgba(143,188,143,0.25);
+    padding: 3px 12px;
+    border-radius: 14px;
+  }
+
+  .no-restriction {
+    background: rgba(150,200,160,0.25);
+    color: rgba(60,130,80,0.85);
+  }
+
+  /* 护肤 */
+  .skincare-wrap {
+    background: rgba(255,255,255,0.55);
+    border-radius: 20px;
+    padding: 14px 18px;
+    margin-bottom: 22px;
+    border: 1px solid rgba(140,200,150,0.40);
+    border-left: 3px solid #5A8F6A;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+  }
+
+  .sk-title {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 10px;
+    font-weight: 400;
+    color: #5A8F6A;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+  }
+
+  .sk-content {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 12px;
+    color: #3D6A4D;
+    line-height: 1.9;
+    letter-spacing: 0.8px;
+  }
+
+  /* 底部 */
+  .footer {
+    text-align: center;
+    padding-top: 14px;
+  }
+
+  .footer-ornament {
+    color: rgba(45,90,61,0.50);
+    font-size: 12px;
+    letter-spacing: 14px;
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .footer-text {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 18px;
+    color: rgba(45,90,61,0.50);
+    letter-spacing: 4px;
+  }
+
+  /* 风格名称角标（测试用） */
+  .style-badge {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 10px;
+    z-index: 999;
+    font-family: sans-serif;
+  }
+
+</style>
+</head>
+<body>
+  <div class="bg-layer">
+    
+    <svg class="decor-svg" viewBox="0 0 750 1050" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="50" cy="60" rx="45" ry="22" fill="100160100,0.12)" transform="rotate(-30,50,60)"/>
+      <ellipse cx="30" cy="90" rx="38" ry="18" fill="120180120,0.096)" transform="rotate(-50,30,90)"/>
+      <path d="M50 105 Q55 150 40 200" stroke="8014080,0.072)" stroke-width="2" fill="none"/>
+      <ellipse cx="45" cy="140" rx="25" ry="12" fill="120180120,0.072)" transform="rotate(-20,45,140)"/>
+      <ellipse cx="700" cy="80" rx="50" ry="24" fill="120180120,0.12)" transform="rotate(20,700,80)"/>
+      <ellipse cx="720" cy="120" rx="40" ry="20" fill="100160100,0.096)" transform="rotate(40,720,120)"/>
+      <ellipse cx="690" cy="950" rx="65" ry="30" fill="8014080,0.096)" transform="rotate(-10,690,950)"/>
+      <ellipse cx="30" cy="850" rx="55" ry="25" fill="100160100,0.08399999999999999)" transform="rotate(15,30,850)"/>
+      <ellipse cx="200" cy="400" rx="30" ry="14" fill="120180120,0.06)" transform="rotate(-40,200,400)"/>
+      <ellipse cx="580" cy="600" rx="28" ry="13" fill="100160100,0.06)" transform="rotate(30,580,600)"/>
+      <circle cx="380" cy="1020" r="40" fill="8014080,0.048)"/>
+    </svg>
+  </div>
+
+  <div class="container">
+
+    <!-- 头部 -->
+    <div class="header">
+      <div class="date-label">2026年04月03日</div>
+      <div class="greeting">早安</div>
+      <div class="weekday-badge">周五</div>
+    </div>
+
+    <div class="divider">🍃 · 🍂 · 🍃</div>
+
+    <!-- 诗意 -->
+    <div class="poem-wrap">
+      <div class="poem-text">春水初生，春林初盛，春风十里，不如你。—— 冯唐</div>
+      <div class="poem-text">愿你所有的清晨都明亮，所有的傍晚都温柔。</div>
+    </div>
+
+    <!-- 天气 -->
+    <div class="section-label">今日天气</div>
+    <div class="weather-grid">
+      
+        <div class="city-card">
+            <div class="city-name">仁寿</div>
+            <div class="temp">18°</div>
+            <div class="weather-icon-lg">⛅</div>
+            <div class="weather-text">多云</div>
+            <div class="weather-detail">
+                14° ~ 22°
+            </div>
+            <div class="weather-tags">
+                <span class='tag air-tag'>良</span>
+            </div>
+            <div class="uv-line">🌞 较弱（建议涂SPF3</div>
+            <div class="dress-line">👗 建议穿薄外套，内搭长袖</div>
+        </div>
+        
+        <div class="city-card">
+            <div class="city-name">眉山</div>
+            <div class="temp">19°</div>
+            <div class="weather-icon-lg">☀️</div>
+            <div class="weather-text">晴</div>
+            <div class="weather-detail">
+                15° ~ 24°
+            </div>
+            <div class="weather-tags">
+                <span class='tag air-tag'>优</span>
+            </div>
+            <div class="uv-line">🌞 中等（建议外出防晒）</div>
+            <div class="dress-line">👗 轻薄外套或衬衫</div>
+        </div>
+        
+        <div class="city-card">
+            <div class="city-name">成都</div>
+            <div class="temp">17°</div>
+            <div class="weather-icon-lg">🌥️</div>
+            <div class="weather-text">阴</div>
+            <div class="weather-detail">
+                13° ~ 20°
+            </div>
+            <div class="weather-tags">
+                <span class='tag air-tag'>良</span>
+            </div>
+            <div class="uv-line">🌞 弱（无需特别防晒）</div>
+            <div class="dress-line">👗 建议穿外套，携带雨伞</div>
+        </div>
+        
+    </div>
+
+    <!-- 限号 -->
+    <div class="restriction-wrap">
+      <div class="restriction-title">成都限号</div>
+      <div class="r-row">
+        <span class="r-day">04月03日 周五</span>
+        <span class="r-num ">尾号 5、0 限行</span>
+      </div>
+      <div class="r-row">
+        <span class="r-day">04月04日 周六</span>
+        <span class="r-num no-restriction">不限行</span>
+      </div>
+    </div>
+
+    <!-- 护肤 -->
+    <div class="skincare-wrap">
+      <div class="sk-title">✧ 今日护肤小贴士</div>
+      <div class="sk-content">春季皮肤敏感期，换季时请先做局部测试再更换新护肤品，减少刺激成分的使用。</div>
+    </div>
+
+    <!-- 底部 -->
+    <div class="footer">
+      <span class="footer-ornament">🍃 · 🍂 · 🍃</span>
+      <div class="footer-text">与自然同行，心随境转</div>
+    </div>
+
+  </div>
+</body>
+</html>

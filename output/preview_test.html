@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Noto+Sans+SC:wght@300;400&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 750px;
+    min-height: 1050px;
+    background: linear-gradient(160deg,#F0FFF8,#D8F8F0,#C0F0E8,#A8E8E0,#90E0D8);
+    font-family: 'Noto Serif SC', 'Songti SC', 'FangSong', serif;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* 背景纹理层 - 细微底纹增加层次感 */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image:
+      radial-gradient(ellipse at 20% 30%, #48B8D018 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 70%, #38A0B815 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 50%, #2888A008 0%, transparent 60%);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* 背景细微纹理 */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    z-index: 0.1;
+    pointer-events: none;
+  }
+
+  /* 背景图 */
+  .bg-image {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+  }
+  .bg-image img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+  }
+
+  /* 背景遮罩（让文字更清晰，默认白色半透明） */
+  .bg-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(255,255,255,0.75);
+    z-index: 0.5;
+  }
+
+  .decor {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .container {
+    position: relative;
+    z-index: 2;
+    padding: 44px 38px 40px;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .greeting {
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: #185868;
+    letter-spacing: 8px;
+    margin-bottom: 6px;
+  }
+
+  .date-label {
+    font-family: 'Ma Shan Zheng', 'ZCOOL XiaoWei', cursive;
+    font-size: 30px;
+    color: #185868;
+    padding: 8px 24px;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+  }
+
+  .weekday-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.60);
+    color: #185868;
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 3px;
+    padding: 6px 22px;
+    border-radius: 20px;
+    box-shadow: 0 4px 16px #2888A020;
+    backdrop-filter: blur(8px);
+  }
+
+  .divider {
+    text-align: center;
+    margin: 18px 0 22px;
+    color: rgba(24,88,104,0.62);
+    font-size: 13px;
+    letter-spacing: 10px;
+    font-family: serif;
+  }
+
+  .poem-wrap {
+    text-align: center;
+    margin-bottom: 14px;
+    padding: 14px 20px 12px;
+    background: rgba(255,255,255,0.60);
+    border-radius: 20px;
+    border: 1px solid #38A0B840;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 24px #2888A015;
+  }
+
+  .poem-text {
+    font-family: 'Noto Serif SC', 'Songti SC', 'FangSong', serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: #185868;
+    line-height: 2.2;
+    letter-spacing: 2px;
+    font-style: italic;
+  }
+
+  .poem-text + .poem-text {
+    margin-top: 8px;
+    padding-top: 10px;
+    border-top: 1px dashed #38A0B830;
+  }
+
+  .section-label {
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    color: rgba(24,88,104,0.62);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  .weather-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .city-card {
+    background: rgba(255,255,255,0.60);
+    border-radius: 20px;
+    padding: 10px 8px 8px;
+    text-align: center;
+    border: 1px solid #38A0B835;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px #2888A012;
+  }
+
+  .city-name {
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(24,88,104,0.62);
+    letter-spacing: 3px;
+    margin-bottom: 4px;
+  }
+
+  .temp-main {
+    font-family: 'Noto Serif SC', 'Songti SC', 'FangSong', serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: #2888A0;
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+
+  .temp-desc {
+    font-size: 14px;
+    font-weight: 400;
+    color: rgba(24,88,104,0.62);
+  }
+
+  .weather-info {
+    margin: 6px 0;
+    padding: 4px 0;
+    border-top: 1px dashed #38A0B825;
+    border-bottom: 1px dashed #38A0B825;
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+    font-size: 10px;
+    color: rgba(24,88,104,0.62);
+    margin-bottom: 3px;
+  }
+
+  .info-row:last-child {
+    margin-bottom: 0;
+  }
+
+  .info-label {
+    font-weight: 500;
+    color: rgba(24,88,104,0.62);
+  }
+
+  .info-value {
+    color: #185868;
+  }
+
+  .tips-row {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 8px;
+  }
+
+  .tip-item {
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+    font-size: 10px;
+    color: rgba(24,88,104,0.62);
+    letter-spacing: 0.5px;
+  }
+
+  .restriction-wrap {
+    background: rgba(255,255,255,0.60);
+    border-radius: 20px;
+    padding: 10px 16px;
+    margin-bottom: 12px;
+    border: 1px solid #38A0B840;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px #2888A015;
+  }
+
+  .restriction-title {
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    color: rgba(24,88,104,0.62);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  .r-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px dashed #38A0B830;
+  }
+
+  .r-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .r-day {
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+    font-size: 11px;
+    color: #185868;
+  }
+
+  .r-num {
+    font-family: 'Noto Serif SC', 'Songti SC', 'FangSong', serif;
+    font-size: 12px;
+    color: #2888A0;
+    font-weight: 600;
+    background: #38A0B825;
+    padding: 3px 12px;
+    border-radius: 14px;
+  }
+
+  .no-restriction {
+    background: #38A0B835;
+    color: #2888A0;
+  }
+
+  .skincare-wrap {
+    background: rgba(255,255,255,0.60);
+    border-radius: 20px;
+    padding: 10px 16px;
+    margin-bottom: 12px;
+    border: 1px solid #38A0B835;
+    border-left: 3px solid #48B8D0;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px #2888A010;
+  }
+
+  .sk-title {
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+    font-size: 10px;
+    font-weight: 400;
+    color: #38A0B8;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+  }
+
+  .sk-content {
+    font-family: 'Noto Serif SC', 'Songti SC', 'FangSong', serif;
+    font-size: 12px;
+    color: #185868;
+    line-height: 1.9;
+    letter-spacing: 0.8px;
+  }
+
+  .footer {
+    text-align: center;
+    padding-top: 8px;
+  }
+
+  .footer-ornament {
+    color: rgba(24,88,104,0.62);
+    font-size: 12px;
+    letter-spacing: 14px;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .footer-text {
+    font-family: 'Ma Shan Zheng', 'ZCOOL XiaoWei', cursive;
+    font-size: 16px;
+    color: rgba(24,88,104,0.62);
+    letter-spacing: 4px;
+  }
+
+  .logo-wrap {
+    position: fixed;
+    top: 24px;
+    left: 24px;
+    z-index: 100;
+  }
+
+  .logo-wrap img {
+    max-height: 40px;
+    max-width: 120px;
+    object-fit: contain;
+    opacity: 0.85;
+  }
+</style>
+</head>
+<body>
+  
+  <div class="decor">
+    
+    <svg viewBox="0 0 750 1050" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0 50 Q100 30 200 50 Q300 70 400 50 Q500 30 600 50 Q680 70 750 50" stroke="rgba(56, 160, 184, 0.08)" stroke-width="20" fill="none" opacity="0.5"/>
+      <path d="M0 120 Q150 100 300 120 Q450 140 600 120 Q680 100 750 120" stroke="rgba(56, 160, 184, 0.06)" stroke-width="15" fill="none" opacity="0.4"/>
+      <path d="M0 180 Q200 160 400 180 Q550 200 750 180" stroke="rgba(40, 136, 160, 0.05)" stroke-width="12" fill="none" opacity="0.3"/>
+      <path d="M0 900 Q150 880 300 900 Q450 920 600 900 Q680 880 750 900" stroke="rgba(56, 160, 184, 0.07)" stroke-width="18" fill="none" opacity="0.4"/>
+      <path d="M0 960 Q200 940 400 960 Q550 980 750 960" stroke="rgba(40, 136, 160, 0.05)" stroke-width="14" fill="none" opacity="0.3"/>
+    </svg>
+  </div>
+
+  <div class="logo-wrap">
+    <img src="file:///C:/Users/30286/WorkBuddy/20260403180838/daily-card/assets/夏天抗衰诊所透明背景LOGO.png" alt="logo">
+  </div>
+
+  <div class="container">
+    <div class="header">
+      <div class="greeting">早安</div>
+      <div class="date-label">2026年04月04日</div>
+      <div class="weekday-badge">周六</div>
+    </div>
+
+    <div class="divider">✿ · ˚ ✿</div>
+
+    <div class="poem-wrap">
+      <div class="poem-text">人间四月天，最美是烟雨，最暖是晴日。</div>
+      <div class="poem-text">人间四月天，最美是烟雨，最暖是晴日。</div>
+    </div>
+
+    <div class="section-label">今日天气</div>
+    <div class="weather-grid">
+        <div class="city-card">
+            <div class="city-name">仁寿</div>
+            <div class="temp-main">14° <span class="temp-desc">☀️ 晴（夜） → 小雨（南1-2级）</span></div>
+            <div class="weather-info">
+                <div class="info-row">
+                    <span class="info-label">今日</span>
+                    <span class="info-value">小雨 14° ~ 25°</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">明日</span>
+                    <span class="info-value">小雨 15° ~ 25°</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">湿度</span>
+                    <span class="info-value">83%</span>
+                </div>
+            </div>
+            <div class="tips-row">
+                <span class="tip-item">☀️ 中等</span>
+                <span class="tip-item">👗 温暖</span>
+                <span class="tip-item">🟡 78 良</span>
+            </div>
+        </div>
+        <div class="city-card">
+            <div class="city-name">成都</div>
+            <div class="temp-main">--° <span class="temp-desc">🌤️ -- → --（----）</span></div>
+            <div class="weather-info">
+                <div class="info-row">
+                    <span class="info-label">今日</span>
+                    <span class="info-value">-- --° ~ --°</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">明日</span>
+                    <span class="info-value">-- --° ~ --°</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">湿度</span>
+                    <span class="info-value">--%</span>
+                </div>
+            </div>
+            <div class="tips-row">
+                <span class="tip-item">☀️ </span>
+                <span class="tip-item">👗 </span>
+                <span class="tip-item">🟢 --</span>
+            </div>
+        </div></div>
+
+    <div class="restriction-wrap">
+      <div class="restriction-title">成都限号</div>
+      <div class="r-row">
+        <span class="r-day">04月04日 周六</span>
+        <span class="r-num no-restriction">不限行</span>
+      </div>
+      <div class="r-row">
+        <span class="r-day">04月05日 周日</span>
+        <span class="r-num no-restriction">不限行</span>
+      </div>
+    </div>
+
+    <div class="skincare-wrap">
+      <div class="sk-title">✧ 今日护肤小贴士</div>
+      <div class="sk-content">【换季护肤】春季皮肤屏障脆弱，换新护肤品时请先在耳后做24小时局部测试。</div>
+    </div>
+
+    <div class="footer">
+      <span class="footer-ornament">✿ · ˚ ✿</span>
+      <div class="footer-text">如蛋清透，如晨清新</div>
+    </div>
+  </div>
+</body>
+</html>
