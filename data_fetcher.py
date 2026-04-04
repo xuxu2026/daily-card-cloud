@@ -10,7 +10,7 @@ import requests
 import datetime
 import random
 import time
-from config import CAIYUN_TOKEN, QWEATHER_API_KEY, QWEATHER_API_HOST, CITIES, bj_date
+from config import CAIYUN_TOKEN, QWEATHER_API_KEY, QWEATHER_API_HOST, CITIES, bj_date, JUHE_API_KEY
 
 # ─────────────────────────────────────────────
 # 天气 API 轮询策略
@@ -21,8 +21,6 @@ MAX_SINGLE_API_RETRIES = 3   # 单个 API 最多试几次
 API_RETRY_DELAY = 5          # 两次请求间隔（秒），避免频繁打爆配额
 MAX_CITY_TOTAL_RETRIES = 6   # 单城市总请求上限（防止死循环）
 
-# 聚合数据API配置（备用）
-JUHE_API_KEY = "9aa7a6306d7bb369e673afc85ea67dfd"
 
 # 天气现象映射（彩之颜 -> 中文）
 SKYCON_MAP = {
