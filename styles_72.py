@@ -13,6 +13,7 @@
 import os
 import datetime
 import random
+from config import bj_date
 
 
 # ============================================================
@@ -1069,7 +1070,7 @@ ALL_STYLES = HOLIDAY_STYLES + REGULAR_STYLES
 def get_style_for_date(date=None):
     """根据日期返回对应主题（节日期间返回节日主题）"""
     if date is None:
-        date = datetime.date.today()
+        date = bj_date()
     if is_holiday(date):
         styles = get_holiday_styles(date)
         if styles:
@@ -1083,7 +1084,7 @@ def get_style_for_date(date=None):
 def get_holiday_styles(date=None):
     """获取某日期对应的节日主题列表（1-2个），用于节日期间同时推送多款供选择"""
     if date is None:
-        date = datetime.date.today()
+        date = bj_date()
     if not is_holiday(date):
         return []
     
@@ -1135,7 +1136,7 @@ def get_holiday_styles(date=None):
 
 def is_holiday(date=None):
     if date is None:
-        date = datetime.date.today()
+        date = bj_date()
     m, d = date.month, date.day
     holidays = {
         (1, 1): 'NewYearDay', (1, 28): 'SpringFestival01', (1, 29): 'SpringFestival02',
