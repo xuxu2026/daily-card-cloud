@@ -43,4 +43,5 @@ jobs:
           QWEATHER_API_HOST: ${{ secrets.QWEATHER_API_HOST }}
           QWEATHER_API_KEY: ${{ secrets.QWEATHER_API_KEY }}
           XHS_COOKIE: ${{ secrets.XHS_COOKIE }}
+          JUHE_API_KEY: ${{ secrets.JUHE_API_KEY }}
         run: python main.py
