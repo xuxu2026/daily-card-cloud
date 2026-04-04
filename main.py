@@ -9,6 +9,7 @@ import traceback
 import datetime
 import hashlib
 import os
+import time
 from pathlib import Path
 
 # 确保脚本所在目录在 Python 路径中
@@ -84,10 +85,29 @@ def main():
         print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 开始执行日签推送任务")
         print('='*50)
 
-        # Step 1: 获取数据
+        # Step 1: 获取数据（带重试，确保天气 API 返回有效数据）
         print("\n[1/3] 正在获取天气、限号等数据...")
-        data = fetch_all_data()
-        print(f"  ✓ 数据获取完成 - {data['date']} {data['weekday']}")
+        MAX_RETRIES = 3
+        RETRY_INTERVAL = 60  # 秒
+        data = None
+        for attempt in range(1, MAX_RETRIES + 1):
+            data = fetch_all_data()
+            # 检查天气数据是否有效（排除 "--" fallback）
+            weather_invalid = []
+            for w in data.get('weather_list', []):
+                temp = w.get('now', {}).get('temp', '--')
+                if temp == '--' or temp is None:
+                    weather_invalid.append(w.get('city', '?'))
+            if not weather_invalid:
+                print(f"  ✓ 数据获取完成 - {data['date']} {data['weekday']}")
+                break
+            print(f"  ⚠ 第 {attempt} 次：{', '.join(weather_invalid)} 温度为 '--'，{'重试...' if attempt < MAX_RETRIES else '放弃'}")
+            if attempt < MAX_RETRIES:
+                print(f"    等待 {RETRY_INTERVAL} 秒后重试...")
+                time.sleep(RETRY_INTERVAL)
+        else:
+            # 重试耗尽，发送警告但不放弃（数据可能部分有效）
+            print(f"  ⚠ 天气数据不完整，但仍继续生成（使用 fallback 数据）")
 
         # Step 2: 生成图片
         today = datetime.date.today()
