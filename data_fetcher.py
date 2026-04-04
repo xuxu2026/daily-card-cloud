@@ -10,7 +10,8 @@ import requests
 import datetime
 import random
 import time
-from config import CAIYUN_TOKEN, QWEATHER_API_KEY, QWEATHER_API_HOST, CITIES, bj_date, JUHE_API_KEY
+from config import CAIYUN_TOKEN, QWEATHER_API_KEY
+from styles_72 import is_holiday as _is_holiday_2026, QWEATHER_API_HOST, CITIES, bj_date, JUHE_API_KEY
 
 # ─────────────────────────────────────────────
 # 天气 API 轮询策略
@@ -482,9 +483,13 @@ def get_chengdu_restriction() -> dict:
     tomorrow = today + datetime.timedelta(days=1)
 
     def get_restriction_for_day(d: datetime.date) -> str:
+
         wd = d.weekday()  # 0=周一 ... 6=周日
         if wd >= 5:  # 周末不限
             return "不限行"
+        # 法定节假日不限行
+        if _is_holiday_2026(d):
+            return "不限行（节假日）"
         numbers, _ = WEEKDAY_NUMBERS[wd]
         return f"尾号 {numbers} 限行"
 
