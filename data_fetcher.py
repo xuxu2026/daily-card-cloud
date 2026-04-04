@@ -329,10 +329,10 @@ def get_chengdu_restriction() -> dict:
     tomorrow_str = get_restriction_for_day(tomorrow)
 
     return {
-        "today_date": today.strftime("%m月%d日"),
+        "today_date": f"{today.month:02d}月{today.day:02d}日",
         "today_week": ["周一", "周二", "周三", "周四", "周五", "周六", "周日"][today.weekday()],
         "today_restriction": today_str,
-        "tomorrow_date": tomorrow.strftime("%m月%d日"),
+        "tomorrow_date": f"{tomorrow.month:02d}月{tomorrow.day:02d}日",
         "tomorrow_week": ["周一", "周二", "周三", "周四", "周五", "周六", "周日"][tomorrow.weekday()],
         "tomorrow_restriction": tomorrow_str,
     }
