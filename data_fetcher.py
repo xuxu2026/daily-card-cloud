@@ -9,7 +9,7 @@
 import requests
 import datetime
 import random
-from config import CAIYUN_TOKEN, QWEATHER_API_KEY, QWEATHER_API_HOST, CITIES
+from config import CAIYUN_TOKEN, QWEATHER_API_KEY, QWEATHER_API_HOST, CITIES, bj_date
 
 # 聚合数据API配置（备用）
 JUHE_API_KEY = "9aa7a6306d7bb369e673afc85ea67dfd"
@@ -316,7 +316,7 @@ def get_chengdu_restriction() -> dict:
         4: ("5、0", "Friday"),
     }
 
-    today = datetime.date.today()
+    today = bj_date()
     tomorrow = today + datetime.timedelta(days=1)
 
     def get_restriction_for_day(d: datetime.date) -> str:
@@ -419,7 +419,7 @@ def get_skincare_tip() -> str:
             pass  # 降级本地库
 
     # 备用：本地季节库
-    month = datetime.date.today().month
+    month = bj_date().month
     if 3 <= month <= 5:
         season = "spring"
     elif 6 <= month <= 8:
@@ -475,7 +475,7 @@ def get_poetic_sentences() -> tuple:
 
 def fetch_all_data() -> dict:
     """汇总所有数据，供图片生成使用"""
-    today = datetime.date.today()
+    today = bj_date()
     weather_list = get_all_weather()
     restriction = get_chengdu_restriction()
     skincare = get_skincare_tip()
