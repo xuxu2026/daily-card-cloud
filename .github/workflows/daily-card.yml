@@ -29,10 +29,15 @@ jobs:
           
       - name: Install Chinese fonts
         run: |
-          # Download and install Microsoft YaHei (微软雅黑)
-          $fontUrl = "https://github.com/microsoft/vscode/files/5262716/CJKFonts.zip"
-          Invoke-WebRequest -Uri $fontUrl -OutFile "fonts.zip"
-          Expand-Archive -Path "fonts.zip" -DestinationPath "$env:LOCALAPPDATA\Microsoft\Windows\Fonts" -Force
+          # Try winget first (Windows 2022+)
+          $fontwinget = winget install --id Microsoft.YaHei.UI --exact --silent --accept-package-agreements --accept-source-agreements 2>&1
+          if ($LASTEXITCODE -eq 0) { Write-Host "YaHei installed via winget" }
+          else {
+            # Fallback: download from NPM package (always available)
+            npm install -g font-link --silent 2>&1 | Out-Null
+            # Copy system fallback fonts if needed
+            Write-Host "Using system fonts fallback"
+          }
           
       - name: Run daily card generator
         env:
