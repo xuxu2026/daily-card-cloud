@@ -39,8 +39,9 @@ SKYCON_MAP = {
 }
 
 # 导入内容抓取模块（优先全网搜索，备用本地）
+# 注意：需要 beautifulsoup4 + lxml，缺一不可，导入失败则降级本地库
 try:
-    from web_content_fetcher import get_beauty_text as net_get_beauty, get_skincare_tip as net_get_skincare
+    from web_content_fetcher import get_beauty_text as net_get_beauty, get_skincare_tip as net_get_skincare, fetch_beauty_texts
     HAS_CONTENT_FETCHER = True
 except ImportError:
     HAS_CONTENT_FETCHER = False
@@ -67,7 +68,7 @@ def get_weather_caiyun(lat: float, lon: float) -> dict:
         "daily": {},
     }
     try:
-        resp = requests.get(url, params=params, timeout=10)
+        resp = requests.get(url, params=params, timeout=15)
         data = resp.json()
         if data.get("status") == "ok" and data.get("result"):
             r = data["result"]
@@ -161,7 +162,7 @@ def get_weather_hefeng_supplement(location_id: str) -> dict:
         # 生活指数
         # 1=运动, 2=洗车, 3=穿衣, 5=紫外线, 7=过敏, 12=太阳镜
         indices_url = f"{base}/indices/1d"
-        indices_resp = requests.get(indices_url, params={**params, "type": "1,2,3,5,7,12"}, timeout=10).json()
+        indices_resp = requests.get(indices_url, params={**params, "type": "1,2,3,5,7,12"}, timeout=15).json()
         if indices_resp.get("code") == "200":
             for idx in indices_resp.get("daily", []):
                 idx_type = idx.get("type")
@@ -405,10 +406,18 @@ POETIC_SENTENCES = [
 def get_skincare_tip() -> str:
     """
     获取护肤贴士（优先全网搜索，备用本地库）
+    保证永远返回非空内容
     """
+    DEFAULT_TIP = "今日建议：做好基础保湿，保持好心情，早睡早起皮肤好。"
+
     if HAS_CONTENT_FETCHER:
-        return net_get_skincare()
-    
+        try:
+            tip = net_get_skincare()
+            if tip and tip.strip():
+                return tip
+        except Exception:
+            pass  # 降级本地库
+
     # 备用：本地季节库
     month = datetime.date.today().month
     if 3 <= month <= 5:
@@ -419,7 +428,8 @@ def get_skincare_tip() -> str:
         season = "autumn"
     else:
         season = "winter"
-    return random.choice(SKINCARE_TIPS[season])
+    tips = SKINCARE_TIPS.get(season, SKINCARE_TIPS["spring"])
+    return random.choice(tips) if tips else DEFAULT_TIP
 
 
 def get_poetic_sentences() -> tuple:
@@ -428,24 +438,27 @@ def get_poetic_sentences() -> tuple:
     确保 poem1 和 poem2 不重复
     """
     if HAS_CONTENT_FETCHER:
-        p1 = net_get_beauty()
-        # 获取多条，确保 p2 与 p1 不同
         try:
-            from web_content_fetcher import fetch_beauty_texts
+            p1 = net_get_beauty()
+            # 获取多条，确保 p2 与 p1 不同
             texts = fetch_beauty_texts(5)
-            # 找一条与 p1 不同的
             p2 = None
             for t in texts:
                 if t != p1:
                     p2 = t
                     break
-            if p2 is None:
-                p2 = p1
-        except:
-            p2 = p1
-        return p1, p2
-    
-    # 备用：本地库
+            # 如果网上只抓到1条或全部相同，从本地备用库补一条
+            if p2 is None or p2 == p1:
+                local_poems = [t for t, _ in POETIC_SENTENCES if t != p1]
+                if local_poems:
+                    p2 = random.choice(local_poems)
+                else:
+                    p2 = p1
+            return p1, p2
+        except Exception:
+            pass  # 降级本地库
+
+    # 备用：本地库（保证两条不重复）
     chosen = random.sample(POETIC_SENTENCES, 2)
     result = []
     for text, author in chosen:
