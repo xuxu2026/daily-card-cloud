@@ -1327,9 +1327,9 @@ class H:
         footer="好事发生，幸福绵长 🎉",
     )
 
-    # ── 除夕（12月31日跨年夜）────────────────────────────
+    # ── 跨年夜（12月31日）────────────────────────────
     H53 = make_style(
-        name="除夕守岁", name_en="NewYearEve02",
+        name="跨年守岁", name_en="NewYearEve02",
         bg_grad=make_bg(["#F8F0FF","#E8D8FF","#D8C0FF","#C8A8FF","#B890FF"]),
         primary="#6020A0", secondary="#7838B8", accent="#9050D0",
         text="#380C60", text_light="rgba(56,12,96,0.62)",
@@ -1547,8 +1547,8 @@ _HOLIDAY_MAP = {
     (11, 24): ('Thanksgiving01', '感恩节'),
     # 圣诞
     (12, 25): ('Christmas01', '圣诞节'),
-    # 除夕
-    (12, 31): ('NewYearEve', '除夕'),
+    # 跨年夜
+    (12, 31): ('NewYearEve', '跨年夜'),
 }
 
 
