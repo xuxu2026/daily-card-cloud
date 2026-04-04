@@ -9,26 +9,35 @@ on:
 jobs:
   run:
     runs-on: windows-latest
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          
+
       - name: Install dependencies
         run: |
           pip install playwright imgkit python-dateutil requests pillow beautifulsoup4 lxml
-          
+
       - name: Install Playwright browsers
         run: |
           playwright install msedge --with-deps
-          
+
+      - name: Set timezone to China Standard Time
+        run: |
+          # 关键！将 Windows 系统时区设为中国标准时间
+          # GitHub Actions windows-latest 默认是 UTC，直接用 datetime.now() 会拿到 UTC 时间
+          # 加这一行确保 Python 的 datetime 使用北京时间
+          tzutil /s "China Standard Time"
+          $env:TZ = "Asia/Shanghai"
+
       - name: Run daily card generator
         env:
+          TZ: Asia/Shanghai
           WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
           CAIYUN_TOKEN: ${{ secrets.CAIYUN_TOKEN }}
           QWEATHER_API_HOST: ${{ secrets.QWEATHER_API_HOST }}
