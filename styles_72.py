@@ -1023,7 +1023,7 @@ class H:
         divider="📚 · 📖 · 📚",
         greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
         greeting_size="32px", tag_bg="rgba(143,76,32,0.18)", tag_color="#7B3A10",
-        card_radius="16px", decor="chrysanthemum", greeting="教师节快乐",
+        card_radius="16px", decor="lines", greeting="教师节快乐",
         footer="师恩如山，桃李芬芳 📚",
     )
 
@@ -1352,8 +1352,8 @@ class H:
         divider="⚙ · ⚙ · ⚙",
         greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
         greeting_size="32px", tag_bg="rgba(32,88,168,0.18)", tag_color="#1A4898",
-        card_radius="16px", decor="grain", greeting="调休补班",
-        footer="记得限号，安全出行 ⚙",
+        card_radius="16px", decor="grain", greeting="努力奋斗",
+        footer="安全出行 ⚙",
     )
 
     H55 = make_style(
