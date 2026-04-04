@@ -9,7 +9,17 @@
 import requests
 import datetime
 import random
+import time
 from config import CAIYUN_TOKEN, QWEATHER_API_KEY, QWEATHER_API_HOST, CITIES, bj_date
+
+# ─────────────────────────────────────────────
+# 天气 API 轮询策略
+# 每个城市按顺序尝试各 API，失败则换下一个，直到拿满数据
+# 最多完成 4 轮（全彩云×3 + 全和风×3 = 6 次请求，约 30 秒），仍然失败才放弃
+# ─────────────────────────────────────────────
+MAX_SINGLE_API_RETRIES = 3   # 单个 API 最多试几次
+API_RETRY_DELAY = 5          # 两次请求间隔（秒），避免频繁打爆配额
+MAX_CITY_TOTAL_RETRIES = 6   # 单城市总请求上限（防止死循环）
 
 # 聚合数据API配置（备用）
 JUHE_API_KEY = "9aa7a6306d7bb369e673afc85ea67dfd"
@@ -187,7 +197,7 @@ def get_weather_qweather_fallback(location_id: str) -> dict:
     params = {"location": location_id, "key": QWEATHER_API_KEY, "lang": "zh"}
     result = {"temp": "--", "text": "--", "humidity": "--"}
     try:
-        resp = requests.get(url, params=params, timeout=15)
+        resp = requests.get(url, params=params, timeout=10)
         data = resp.json()
         if data.get("code") == "200" and data.get("now"):
             now = data["now"]
@@ -224,29 +234,68 @@ def get_social_observation(lat: float, lon: float) -> dict:
 
 def get_weather(lat: float, lon: float, location_id: str = "") -> dict:
     """
-    获取单个城市的天气信息（彩之颜为主 + 和风天气补充）
-    - 彩之颜提供：温度、湿度、天气、风向风力、AQI、今明预报、紫外线、穿衣建议
-    - 和风天气补充：运动、洗车、过敏、太阳镜等生活指数
+    获取单个城市的天气信息（双 API 交替轮询，永不放弃）
+    策略：彩云 → 最多3次 → 失败 → 和风 → 最多3次 → 失败 → 彩云 → 最多3次 → ... 交替直到有数据
+    每次失败后等 5 秒，最多总请求 6 次（约 30 秒），全部失败才放弃
     """
-    # 彩之颜（主数据源）
-    caiyun_data = get_weather_caiyun(lat, lon)
+    # 数据容器：彩云管大部分字段，和风仅补充温度/天气/湿度
+    caiyun_data = {"temp": "--", "text": "--", "humidity": "--"}
+    qweather_data = {"temp": "--", "text": "--", "humidity": "--"}
+    qweather_success = False
 
-    # 彩之颜温度失败时，和风天气回退
-    if caiyun_data.get("temp") == "--" and location_id:
-        qweather_fb = get_weather_qweather_fallback(location_id)
-        if qweather_fb.get("temp") != "--":
-            caiyun_data["temp"] = qweather_fb["temp"]
-        if qweather_fb.get("text") != "--" and caiyun_data.get("text") == "--":
-            caiyun_data["text"] = qweather_fb["text"]
-        if qweather_fb.get("humidity") != "--":
-            caiyun_data["humidity"] = qweather_fb["humidity"]
+    current_api = "caiyun"
+    caiyun_retries = 0
+    qweather_retries = 0
+    total_retries = 0
 
-    # 构建结果
+    while total_retries < MAX_CITY_TOTAL_RETRIES:
+        if current_api == "caiyun" and caiyun_retries < MAX_SINGLE_API_RETRIES:
+            caiyun_retries += 1
+            total_retries += 1
+            data = get_weather_caiyun(lat, lon)
+            if data.get("temp") != "--":
+                caiyun_data = data
+                # 彩云拿到温度就停了（主数据源完整）
+                break
+            if caiyun_retries < MAX_SINGLE_API_RETRIES:
+                time.sleep(API_RETRY_DELAY)
+            current_api = "qweather"
+
+        elif current_api == "qweather" and qweather_retries < MAX_SINGLE_API_RETRIES and location_id:
+            qweather_retries += 1
+            total_retries += 1
+            fb = get_weather_qweather_fallback(location_id)
+            if fb.get("temp") != "--":
+                qweather_data = fb
+                qweather_success = True
+                # 和风拿到温度就停了
+                break
+            if qweather_retries < MAX_SINGLE_API_RETRIES:
+                time.sleep(API_RETRY_DELAY)
+            current_api = "caiyun"
+        else:
+            # 本轮该 API 次数用完，切换
+            if current_api == "caiyun":
+                current_api = "qweather"
+            else:
+                current_api = "caiyun"
+
+    # 合并：优先用彩云数据，彩云温度失败则用和风兜底
+    merged = dict(caiyun_data)
+    source = "彩云" if merged.get("temp") != "--" else ("和风" if qweather_success else "无数据")
+    if merged.get("temp") == "--" and qweather_success:
+        merged["temp"] = qweather_data.get("temp", "--")
+        if merged.get("text") == "--":
+            merged["text"] = qweather_data.get("text", "--")
+        if merged.get("humidity") == "--":
+            merged["humidity"] = qweather_data.get("humidity", "--")
+
+    # 构建结果（merged 优先彩云，彩云温度失败时用和风兜底）
     result = {
         "now": {
-            "temp": caiyun_data.get("temp", "--"),
-            "text": caiyun_data.get("text", "--"),
-            "humidity": caiyun_data.get("humidity", "--"),
+            "temp": merged.get("temp", "--"),
+            "text": merged.get("text", "--"),
+            "humidity": merged.get("humidity", "--"),
             "windDir": caiyun_data.get("windDir", "--"),
             "windScale": caiyun_data.get("windScale", "--"),
         },
@@ -259,6 +308,7 @@ def get_weather(lat: float, lon: float, location_id: str = "") -> dict:
         "daily": caiyun_data.get("daily", {}),
         "indices": {},  # 和风天气生活指数
         "social_obs": {},  # 彩之颜社会化观测
+        "temp_source": source,  # 温度来源（彩云/和风/无数据），用于日志追踪
     }
 
     # 从彩之颜daily中提取今明两天
