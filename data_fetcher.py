@@ -426,7 +426,9 @@ def get_weather_qweather_fallback(location_id: str) -> dict:
             result["temp"] = now.get("temp", "--")
             result["text"] = now.get("text", "--")
             result["humidity"] = now.get("humidity", "--")
-            # /now 接口无独立风向字段，windDir/windScale 留 "--"（由彩云兜底）
+            # 和风 /now 接口有 windDir/windScale，直接提取
+            result["windDir"] = now.get("windDir", "--")
+            result["windScale"] = now.get("windScale", "--")
 
         if daily_data.get("code") == "200" and daily_data.get("daily"):
             # 转换和风预报格式为彩云格式，供 is_weather_complete 和合并使用
