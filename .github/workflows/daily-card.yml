@@ -1,0 +1,23 @@
+name: Daily Card
+
+on:
+  schedule:
+    - cron: '30 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install playwright requests beautifulsoup4 lxml && playwright install chromium
+      - name: Generate and push card
+        env:
+          WXBOT_WEBHOOK: ${{ secrets.WXBOT_WEBHOOK }}
+          JUHE_API_KEY: ${{ secrets.JUHE_API_KEY }}
+          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+        run: python main.py
