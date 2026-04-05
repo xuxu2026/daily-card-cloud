@@ -587,278 +587,194 @@ def is_weather_basic(data: dict) -> bool:
 
 
 
-def get_weather(lat: float, lon: float, location_id: str = "", city_name: str = "") -> dict:
-
+def _score_weather(data: dict) -> int:
     """
-
-    获取单个城市的天气信息（三 API 交替轮询，永不放弃）
-
-    策略：彩云 × 3 → 和风 × 3 → 聚合 × 3 → 彩云 × 3 → ... 直到有数据
-
-    每次失败后等 5 秒，最多总请求 9 次（约 45 秒），全部失败才放弃
-
+    给天气数据打分（分越高越完整）。用于合并阶段判断主数据源。
     """
-
-    caiyun_data = {"temp": "--", "text": "--", "humidity": "--"}
-
-    qweather_data = {"temp": "--", "text": "--", "humidity": "--"}
-
-    juhe_data = {"temp": "--", "text": "--", "humidity": "--"}
-
-
-
-    qweather_success = False
-
-    juhe_success = False
-
-
-
-    # API 轮询顺序：彩云 → 和风 → 聚合 → 循环
-
-    apis = ["caiyun", "qweather", "juhe"]
-
-    api_retries = {"caiyun": 0, "qweather": 0, "juhe": 0}
-
-    api_idx = 0
-
-    total_retries = 0
-
-
-
-    while total_retries < MAX_CITY_TOTAL_RETRIES:
-
-        current_api = apis[api_idx % len(apis)]
-
-
-
-        if current_api == "caiyun" and api_retries["caiyun"] < MAX_SINGLE_API_RETRIES:
-
-            api_retries["caiyun"] += 1
-
-            total_retries += 1
-
-            data = get_weather_caiyun(lat, lon)
-
-            if is_weather_complete(data):
-
-                caiyun_data = data
-
-                break
-
-            # 不完整：继续尝试下一个 API
-
-            if api_retries["caiyun"] < MAX_SINGLE_API_RETRIES:
-
-                time.sleep(API_RETRY_DELAY)
-
-            api_idx += 1
-
-
-
-        elif current_api == "qweather" and api_retries["qweather"] < MAX_SINGLE_API_RETRIES and location_id:
-
-            api_retries["qweather"] += 1
-
-            total_retries += 1
-
-            fb = get_weather_qweather_fallback(location_id)
-
-            # 和风提供了温度+天气+湿度+每日预报（无风向风力），够用了就停
-            if is_weather_basic(fb):
-                qweather_data = fb
-                qweather_success = True
-                break
-
-            if api_retries["qweather"] < MAX_SINGLE_API_RETRIES:
-                time.sleep(API_RETRY_DELAY)
-            api_idx += 1
-
-
-
-        elif current_api == "juhe" and api_retries["juhe"] < MAX_SINGLE_API_RETRIES and city_name:
-
-            api_retries["juhe"] += 1
-
-            total_retries += 1
-
-            fb = get_weather_juhe(city_name)
-
-            if fb.get("temp") != "--":
-
-                juhe_data = fb
-
-                juhe_success = True
-
-                break
-
-            if api_retries["juhe"] < MAX_SINGLE_API_RETRIES:
-
-                time.sleep(API_RETRY_DELAY)
-
-            api_idx += 1
-
-
-
-        else:
-
-            api_idx += 1
-
-
-
-    # åå¹¶ï¼æå­æ®µåéç©ºå¼ï¼å½©äºä¼åãåé£å¶æ¬¡ãèåæå
-
-    # åé»è¾ï¼æ´ä½æ¿æï¼å¦æå½©äºåªè¿åäº tempï¼text/humidity ä¸º "--"ï¼
-
-    #         merged={âtempâ:â19â,âtextâ:â--â} æ´ä½ç¨å½©äºï¼åé£/èåå®æ´æ°æ®è¢«å¿½ç¥
-
-    # ä¿®å¤ï¼æ¯ä¸ªå­æ®µåç¬åé "--" å¼
-
-
-
-    merged = {}
-
-    source_priority = []
-
-    if caiyun_data.get("temp") != "--":
-
-        source_priority.append("彩云")
-
-    if qweather_success:
-
-        source_priority.append("和风")
-
-    if juhe_success:
-
-        source_priority.append("聚合")
-
-    source = " â ".join(source_priority) if source_priority else "æ æ°æ®"
-
-
-
-    def best(fields_data):
-
-        for v in fields_data:
-
-            if v and v != "--":
-
+    score = 0
+    if data.get('temp') and data.get('temp') != '--':
+        score += 2
+    if data.get('text') and data.get('text') != '--':
+        score += 2
+    if data.get('humidity') and data.get('humidity') != '--':
+        score += 1
+    if data.get('windDir') and data.get('windDir') != '--':
+        score += 1
+    if data.get('windScale') and data.get('windScale') != '--':
+        score += 1
+    daily = data.get('daily', {})
+    temp_list = daily.get('temperature', [])
+    sky_list = daily.get('skycon', [])
+    if temp_list:
+        if temp_list[0].get('max') not in (None, 0, ''):
+            score += 2
+        if temp_list[0].get('min') not in (None, 0, ''):
+            score += 2
+    if len(temp_list) >= 2:
+        if temp_list[1].get('max') not in (None, 0, '') and temp_list[1].get('min') not in (None, 0, ''):
+            score += 2
+    if sky_list and sky_list[0].get('value'):
+        score += 1
+    if data.get('aqi') and data.get('aqi') != '--':
+        score += 1
+    if data.get('uv'):
+        score += 1
+    if data.get('dress'):
+        score += 1
+    return score
+
+
+def _merge_weather(caiyun: dict, qweather: dict, juhe: dict, hefeng_sup: dict) -> dict:
+    """
+    以得分最高的 API 为主数据源，其余 API 补全缺失字段。
+    """
+    sources = [
+        ('彩云', caiyun, _score_weather(caiyun)),
+        ('和风', qweather, _score_weather(qweather)),
+        ('聚合', juhe, 0),
+    ]
+    sources.sort(key=lambda x: x[2], reverse=True)
+    primary_name, primary, _ = sources[0]
+
+    def best(*vals):
+        for v in vals:
+            if v and v != '--':
                 return v
+        return '--'
 
-        return "--"
+    def extract_daily(api_data):
+        d = api_data.get('daily') or {}
+        temp_list = d.get('temperature', [])
+        sky_list = d.get('skycon', [])
+        result = {}
+        if temp_list:
+            result['today_max'] = temp_list[0].get('max')
+            result['today_min'] = temp_list[0].get('min')
+        if len(temp_list) >= 2:
+            result['tomorrow_max'] = temp_list[1].get('max')
+            result['tomorrow_min'] = temp_list[1].get('min')
+        if sky_list:
+            result['today_skycon'] = sky_list[0].get('value', 'UNKNOWN')
+            if len(sky_list) >= 2:
+                result['tomorrow_skycon'] = sky_list[1].get('value', 'UNKNOWN')
+        return result
 
+    c_d = extract_daily(caiyun)
+    q_d = extract_daily(qweather)
 
+    def mg(primary_val, *fallbacks):
+        if primary_val not in (None, 0, '', '--'):
+            return primary_val
+        for f in fallbacks:
+            if f not in (None, 0, '', '--'):
+                return f
+        return primary_val if primary_val not in (None, 0, '') else '--'
 
-    for field in ["temp", "text", "humidity"]:
+    today_max = mg(c_d.get('today_max'), q_d.get('today_max'))
+    today_min = mg(c_d.get('today_min'), q_d.get('today_min'))
+    tomorrow_max = mg(c_d.get('tomorrow_max'), q_d.get('tomorrow_max'))
+    tomorrow_min = mg(c_d.get('tomorrow_min'), q_d.get('tomorrow_min'))
+    today_skycon = mg(c_d.get('today_skycon'), q_d.get('today_skycon'), 'UNKNOWN')
+    tomorrow_skycon = mg(c_d.get('tomorrow_skycon'), q_d.get('tomorrow_skycon'), 'UNKNOWN')
 
-        merged[field] = best([
+    merged_daily = {'temperature': [], 'skycon': []}
+    if today_max is not None or today_min is not None:
+        merged_daily['temperature'].append({
+            'max': today_max if today_max not in (None, 0, '') else 0,
+            'min': today_min if today_min not in (None, 0, '') else 0,
+        })
+    if tomorrow_max is not None or tomorrow_min is not None:
+        merged_daily['temperature'].append({
+            'max': tomorrow_max if tomorrow_max not in (None, 0, '') else 0,
+            'min': tomorrow_min if tomorrow_min not in (None, 0, '') else 0,
+        })
+    if today_skycon and today_skycon != 'UNKNOWN':
+        merged_daily['skycon'].append({'value': today_skycon})
+    if tomorrow_skycon and tomorrow_skycon != 'UNKNOWN':
+        merged_daily['skycon'].append({'value': tomorrow_skycon})
 
-            caiyun_data.get(field, "--"),
-
-            qweather_data.get(field, "--") if qweather_success else "--",
-
-            juhe_data.get(field, "--"),
-
-        ])
-
-
-
-    def best_or(v1, v2, default="--"):
-
-        return v1 if (v1 and v1 != "--") else (v2 if (v2 and v2 != "--") else default)
-
-
-
-    result = {
-
-        "now": {
-
-            "temp": merged.get("temp", "--"),
-
-            "text": merged.get("text", "--"),
-
-            "humidity": merged.get("humidity", "--"),
-
-            "windDir": best_or(caiyun_data.get("windDir"), qweather_data.get("windDir")),
-
-            "windScale": best_or(caiyun_data.get("windScale"), qweather_data.get("windScale")),
-
-        },
-
-        "today": {},
-
-        "tomorrow": {},
-
-        "uv": best_or(caiyun_data.get("uv"), qweather_data.get("uv"), ""),
-
-        "dress": best_or(caiyun_data.get("dress"), qweather_data.get("dress"), ""),
-
-        "air": best_or(caiyun_data.get("aqi"), qweather_data.get("aqi"), "--"),
-
-        "air_level": best_or(caiyun_data.get("aqi_level"), qweather_data.get("aqi_level"), "--"),
-
-        # 优先用彩云预报，彩云失败时用和风预报兜底
-        "daily": caiyun_data.get("daily") or qweather_data.get("daily") or {},
-
-        "indices": {},
-
-        "social_obs": {},
-
-        "temp_source": source,
-
+    return {
+        'temp': best(primary.get('temp'), qweather.get('temp'), juhe.get('temp')),
+        'text': best(primary.get('text'), qweather.get('text'), juhe.get('text')),
+        'humidity': best(primary.get('humidity'), qweather.get('humidity'), juhe.get('humidity')),
+        'windDir': best(primary.get('windDir'), qweather.get('windDir')),
+        'windScale': best(primary.get('windScale'), qweather.get('windScale')),
+        'aqi': best(primary.get('aqi'), qweather.get('aqi')),
+        'aqi_level': best(primary.get('aqi_level'), qweather.get('aqi_level')),
+        'uv': best(primary.get('uv'), qweather.get('uv')),
+        'dress': best(primary.get('dress'), qweather.get('dress')),
+        'daily': merged_daily,
+        'temp_source': primary_name,
     }
 
 
-
-# 从彩之颜daily中提取今明两天，彩云失败时用和风兜底
-
-    # 优先使用彩云预报，失败则用和风预报
-    caiyun_daily = caiyun_data.get("daily", {})
-    qweather_daily = qweather_data.get("daily", {}) or {}
-    daily = caiyun_daily if caiyun_daily.get("temperature") else qweather_daily
-
-    temperature = daily.get("temperature", [])
-    skycon = daily.get("skycon", [])
-
-    if temperature and len(temperature) >= 1:
-        t = temperature[0]
-        result["today"] = {
-            "tempMax": str(int(t.get("max", 0))),
-            "tempMin": str(int(t.get("min", 0))),
-            "textDay": SKYCON_MAP.get(skycon[0].get("value", "UNKNOWN") if skycon else "UNKNOWN", "--"),
-        }
-
-    if temperature and len(temperature) >= 2:
-        t = temperature[1]
-        result["tomorrow"] = {
-            "tempMax": str(int(t.get("max", 0))),
-            "tempMin": str(int(t.get("min", 0))),
-            "textDay": SKYCON_MAP.get(skycon[1].get("value", "UNKNOWN") if len(skycon) > 1 else "UNKNOWN", "--"),
-        }
-
-
-
-    # 和风天气补充（生活指数）
+def get_weather(lat: float, lon: float, location_id: str = '', city_name: str = '') -> dict:
+    """
+    获取单个城市的天气信息（三 API 全部查完再合并）。
+    策略：
+      1. 彩云 + 和风 + 聚合 各自独立调用
+      2. 三 API 全部调用完毕后，以得分最高的为主数据源，其余补全缺失字段
+      3. 若所有 API 均无有效数据，返回全 -- 兜底数据
+    """
+    caiyun = get_weather_caiyun(lat, lon)
+    qweather = {'temp': '--', 'text': '--', 'humidity': '--'}
+    juhe = {'temp': '--', 'text': '--', 'humidity': '--'}
+    hefeng_sup = {}
 
     if location_id:
+        qweather = get_weather_qweather_fallback(location_id)
+    if city_name:
+        juhe = get_weather_juhe(city_name)
+    if location_id:
+        hefeng_sup = get_weather_hefeng_supplement(location_id)
 
-        hefeng = get_weather_hefeng_supplement(location_id)
+    # 核心：合并所有数据源
+    merged = _merge_weather(caiyun, qweather, juhe, hefeng_sup)
 
-        result["indices"] = hefeng.get("indices", {})
+    def n(v, default='--'):
+        return v if (v and v != '--') else default
 
-        if not result["uv"] and hefeng.get("uv"):
+    temperature = merged.get('daily', {}).get('temperature', [])
+    skycon_list = merged.get('daily', {}).get('skycon', [])
 
-            result["uv"] = hefeng["uv"]
+    result = {
+        'now': {
+            'temp': n(merged.get('temp')),
+            'text': n(merged.get('text')),
+            'humidity': n(merged.get('humidity')),
+            'windDir': n(merged.get('windDir')),
+            'windScale': n(merged.get('windScale')),
+        },
+        'today': {},
+        'tomorrow': {},
+        'uv': merged.get('uv') or '',
+        'dress': merged.get('dress') or '',
+        'air': n(merged.get('aqi')),
+        'air_level': n(merged.get('aqi_level')),
+        'daily': merged.get('daily', {}),
+        'indices': hefeng_sup.get('indices', {}),
+        'social_obs': get_social_observation(lat, lon),
+        'temp_source': merged.get('temp_source', '无数据'),
+    }
 
-        if not result["dress"] and hefeng.get("dress"):
-
-            result["dress"] = hefeng["dress"]
-
-
-
-    # 彩之颜社会化观测
-
-    result["social_obs"] = get_social_observation(lat, lon)
-
-
+    if temperature:
+        t0 = temperature[0]
+        result['today'] = {
+            'tempMax': str(int(t0.get('max', 0))) if t0.get('max') not in (None, 0) else '--',
+            'tempMin': str(int(t0.get('min', 0))) if t0.get('min') not in (None, 0) else '--',
+            'textDay': SKYCON_MAP.get(
+                (skycon_list[0].get('value') if skycon_list else None) or 'UNKNOWN', '--'
+            ),
+        }
+    if len(temperature) >= 2:
+        t1 = temperature[1]
+        result['tomorrow'] = {
+            'tempMax': str(int(t1.get('max', 0))) if t1.get('max') not in (None, 0) else '--',
+            'tempMin': str(int(t1.get('min', 0))) if t1.get('min') not in (None, 0) else '--',
+            'textDay': SKYCON_MAP.get(
+                (skycon_list[1].get('value') if len(skycon_list) > 1 else None) or 'UNKNOWN', '--'
+            ),
+        }
 
     return result
 
