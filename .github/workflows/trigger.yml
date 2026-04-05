@@ -3,14 +3,8 @@ name: Trigger Card
 on:
   schedule:
     # 北京时间 = UTC + 8
-    # 北京 16:08 = UTC 08:08 ← 立即测试用
-    - cron: '8 8 * * *'
-    # 北京 01:00 = UTC 17:00 ← 每日正式推送
+    # 北京 01:00 = UTC 17:00 ← 每日兜底触发（如主 schedule 失败则手动补跑）
     - cron: '0 17 * * *'
-    # 明天 14:30 北京 = UTC 06:30
-    - cron: '30 6 * * *'
-    # 明天 14:35 北京 = UTC 06:35（保底）
-    - cron: '35 6 * * *'
   workflow_dispatch:
 
 jobs:
