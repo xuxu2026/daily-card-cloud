@@ -22,3 +22,5 @@ jobs:
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/xuxu2026/daily-card-cloud/actions/workflows/daily-card.yml/dispatches \
             -d '{"ref":"main"}'
+
+# force re-eval 08:22:52 UTC
