@@ -1,0 +1,39 @@
+name: Test Card
+
+on:
+  schedule:
+    - cron: '5 15 * * *'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install playwright requests beautifulsoup4 lxml && playwright install chromium
+      - name: Generate and push card
+        env:
+          WXBOT_WEBHOOK: ${{ secrets.WXBOT_WEBHOOK }}
+          JUHE_API_KEY: ${{ secrets.JUHE_API_KEY }}
+          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+        run: python main.py
+      - name: Self-destruct after one run
+        if: github.event_name == 'schedule'
+        run: |
+          pip install requests
+          python -c "
+import requests, os, base64
+token = os.environ['GIT_TOKEN']
+headers = {'Authorization': f'token {token}', 'Accept': 'application/vnd.github.v3+json'}
+# get SHA of test-card.yml
+r = requests.get('https://api.github.com/repos/xuxu2026/daily-card-cloud/contents/.github/workflows/test-card.yml', headers=headers)
+sha = r.json()['sha']
+# delete
+requests.delete('https://api.github.com/repos/xuxu2026/daily-card-cloud/contents/.github/workflows/test-card.yml',
+               json={'message': 'Self-destruct after test', 'sha': sha}, headers=headers)
+print('test-card.yml deleted')
+"
