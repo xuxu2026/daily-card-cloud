@@ -648,7 +648,7 @@ def _merge_weather(caiyun: dict, qweather: dict, juhe: dict, hefeng_sup: dict) -
     sources = [
         ('彩云', caiyun, _score_weather(caiyun)),
         ('和风', qweather, _score_weather(qweather)),
-        ('聚合', juhe, 0),
+        ('聚合', juhe, _score_weather(juhe)),
     ]
     sources.sort(key=lambda x: x[2], reverse=True)
     primary_name, primary, _ = sources[0]
