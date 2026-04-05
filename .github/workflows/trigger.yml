@@ -2,11 +2,14 @@ name: Trigger Card
 
 on:
   schedule:
-    # 北京时间 09:00 = UTC 01:00 ← 每日主推送
-    - cron: '0 1 * * *'
-    # 北京时间 14:06 = UTC 06:06（延迟6分钟）
-    - cron: '6 6 * * *'
-    # 北京时间 14:35 = UTC 06:35（延迟6分钟）
+    # 北京时间 = UTC + 8
+    # 北京 16:08 = UTC 08:08 ← 立即测试用
+    - cron: '8 8 * * *'
+    # 北京 01:00 = UTC 17:00 ← 每日正式推送
+    - cron: '0 17 * * *'
+    # 明天 14:30 北京 = UTC 06:30
+    - cron: '30 6 * * *'
+    # 明天 14:35 北京 = UTC 06:35（保底）
     - cron: '35 6 * * *'
   workflow_dispatch:
 
@@ -14,18 +17,10 @@ jobs:
   trigger:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger daily-card workflow
+      - name: Trigger main workflow
         run: |
           curl -s -X POST \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/xuxu2026/daily-card-cloud/actions/workflows/daily-card.yml/dispatches \
             -d '{"ref":"main"}'
-      - name: Trigger test-card workflow
-        run: |
-          curl -s -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/xuxu2026/daily-card-cloud/actions/workflows/test-card.yml/dispatches \
-            -d '{"ref":"main"}'
-# force re-eval 2026-04-05T16:36:02 UTC
