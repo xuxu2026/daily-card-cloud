@@ -16,6 +16,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Install system fonts for CJK
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-noto-cjk fonts-noto-core
       - name: Install dependencies
         run: pip install playwright requests beautifulsoup4 lxml && playwright install chromium
       - name: Generate and push card
