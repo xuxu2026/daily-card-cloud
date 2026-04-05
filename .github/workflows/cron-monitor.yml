@@ -1,5 +1,6 @@
 name: Cron Monitor
 on:
+  workflow_dispatch:
   schedule:
     # 北京时间 17:15 = UTC 09:15（测试用，09:00整点评估窗口注册）
     - cron: '15 9 * * *'
