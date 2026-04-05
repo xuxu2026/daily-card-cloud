@@ -3,7 +3,7 @@ name: Daily Card
 on:
   schedule:
     # 每天 09:30 北京时间 = UTC 01:30
-    - cron: '05 14 * * *'
+    - cron: '05 15 * * *'
   workflow_dispatch:
 
 jobs:
