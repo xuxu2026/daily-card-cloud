@@ -469,7 +469,8 @@ def get_weather_juhe(city_name: str) -> dict:
 
     params = {"city": city_name, "key": JUHE_API_KEY}
 
-    result = {"temp": "--", "text": "--", "humidity": "--"}
+    result = {"temp": "--", "text": "--", "humidity": "--",
+              "windDir": "--", "windScale": "--", "aqi": "--", "aqi_level": "--"}
 
     try:
 
@@ -488,6 +489,20 @@ def get_weather_juhe(city_name: str) -> dict:
             result["text"] = live.get("info", "--")
 
             result["humidity"] = live.get("humidity", "--")
+
+            # 聚合有独立的风力和AQI
+            direct = live.get("direct", "")
+            power = live.get("power", "")
+            if direct and direct not in ("", "无持续风向"):
+                result["windDir"] = direct.replace("风", "").replace("向", "") + "风"
+            if power and power not in ("", "N/A"):
+                result["windScale"] = power
+
+            aqi_val = live.get("aqi", "")
+            if aqi_val and str(aqi_val).isdigit():
+                aqi_int = int(aqi_val)
+                result["aqi"] = str(aqi_int)
+                result["aqi_level"] = get_aqi_level(aqi_int)
 
     except Exception:
 
@@ -699,10 +714,10 @@ def _merge_weather(caiyun: dict, qweather: dict, juhe: dict, hefeng_sup: dict) -
         'temp': best(primary.get('temp'), qweather.get('temp'), juhe.get('temp')),
         'text': best(primary.get('text'), qweather.get('text'), juhe.get('text')),
         'humidity': best(primary.get('humidity'), qweather.get('humidity'), juhe.get('humidity')),
-        'windDir': best(primary.get('windDir'), qweather.get('windDir')),
-        'windScale': best(primary.get('windScale'), qweather.get('windScale')),
-        'aqi': best(primary.get('aqi'), qweather.get('aqi')),
-        'aqi_level': best(primary.get('aqi_level'), qweather.get('aqi_level')),
+        'windDir': best(primary.get('windDir'), qweather.get('windDir'), juhe.get('windDir')),
+        'windScale': best(primary.get('windScale'), qweather.get('windScale'), juhe.get('windScale')),
+        'aqi': best(primary.get('aqi'), qweather.get('aqi'), juhe.get('aqi')),
+        'aqi_level': best(primary.get('aqi_level'), qweather.get('aqi_level'), juhe.get('aqi_level')),
         'uv': best(primary.get('uv'), qweather.get('uv'), hefeng_sup.get('uv', '')),
         'dress': best(primary.get('dress'), qweather.get('dress'), hefeng_sup.get('dress', '')),
         'daily': merged_daily,
