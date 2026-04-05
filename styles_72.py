@@ -1036,7 +1036,7 @@ class H:
         divider="🌻 · 🌻 · 🌻",
         greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
         greeting_size="32px", tag_bg="rgba(176,128,24,0.18)", tag_color="#A06808",
-        card_radius="18px", decor="sunflower", greeting="桃李天下",
+        card_radius="18px", decor="brushstroke", greeting="桃李天下",
         footer="感谢恩师，一路有你 🌻",
     )
 
@@ -1422,8 +1422,6 @@ HOLIDAY_STYLES = [
     H.H11, H.H12,
     # 除夕（1天）
     H.H53,
-    # 调休补班日（2天）
-    H.H54, H.H55,
 ]
 
 ALL_STYLES = HOLIDAY_STYLES + REGULAR_STYLES
@@ -1532,13 +1530,13 @@ _HOLIDAY_MAP = {
     (8, 25): ('Qixi01', '七夕节'),
     # 教师节
     (9, 10): ('TeachersDay01', '教师节'),
-    # 中秋+国庆（9/28补班，10/1-10/8放假，10/10补班）
-    (9, 28): ('HolidayWorkday', '中秋'),
+    # 中秋+国庆（9/28中秋，10/1-10/8放假，10/10国庆收官）
+    (9, 28): ('MidAutumn01', '中秋'),
     (10, 1): ('NationalDay01', '国庆'), (10, 2): ('NationalDay02', '国庆'),
     (10, 3): ('NationalDay03', '国庆'), (10, 4): ('NationalDay04', '国庆'),
     (10, 5): ('NationalDay05', '国庆'), (10, 6): ('NationalDay06', '国庆'),
     (10, 7): ('NationalDay07', '国庆'), (10, 8): ('NationalDay08', '国庆'),
-    (10, 10): ('HolidayWorkday02', '国庆'),
+    (10, 10): ('NationalDay08', '国庆'),
     # 重阳
     (10, 11): ('DoubleNinth01', '重阳节'),
     # 万圣
