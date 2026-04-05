@@ -2,7 +2,7 @@ name: Test Card
 
 on:
   schedule:
-    - cron: '5 15 * * *'
+    - cron: '35 15 * * *'
   workflow_dispatch:
 
 jobs:
@@ -17,19 +17,7 @@ jobs:
         run: pip install playwright requests beautifulsoup4 lxml && playwright install chromium
       - name: Generate and push card
         env:
-          WXBOT_WEBHOOK: ${{ secrets.WXBOT_WEBHOOK }}
-          JUHE_API_KEY: ${{ secrets.JUHE_API_KEY }}
-          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+          WXBOT_WEBHOOK: ${ secrets.WXBOT_WEBHOOK }
+          JUHE_API_KEY: ${ secrets.JUHE_API_KEY }
+          GIT_TOKEN: ${ secrets.GIT_TOKEN }
         run: python main.py
-      - name: Self-destruct
-        if: github.event_name == 'schedule'
-        env:
-          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
-        run: |
-          echo "import requests, os" > _kill.py
-          echo "t = os.environ['GIT_TOKEN']" >> _kill.py
-          echo "h = {'Authorization': 'token ' + t, 'Accept': 'application/vnd.github.v3+json'}" >> _kill.py
-          echo "s = requests.get('https://api.github.com/repos/xuxu2026/daily-card-cloud/contents/.github/workflows/test-card.yml', headers=h).json()['sha']" >> _kill.py
-          echo "requests.delete('https://api.github.com/repos/xuxu2026/daily-card-cloud/contents/.github/workflows/test-card.yml', json={'message': 'Self-destruct', 'sha': s}, headers=h)" >> _kill.py
-          pip install requests
-          python _kill.py
