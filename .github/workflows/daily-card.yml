@@ -48,3 +48,14 @@ jobs:
         run: python main.py
 
 # force re-eval 08:22:52 UTC
+
+
+      - name: Trigger cron-monitor workflow dispatch
+        run: |
+          echo "Triggering cron-monitor via workflow_dispatch..."
+          curl -s -X POST \
+            "https://api.github.com/repos/xuxu2026/daily-card-cloud/actions/workflows/cron-monitor.yml/dispatches" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d "{\"ref\":\"main\"}"
+          echo "Done - cron-monitor triggered"
