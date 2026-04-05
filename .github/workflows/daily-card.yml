@@ -46,8 +46,7 @@ jobs:
           XHS_COOKIE: ${{ secrets.XHS_COOKIE }}
           JUHE_API_KEY: ${{ secrets.JUHE_API_KEY }}
         run: python main.py
-
-# force re-eval 08:22:52 UTC
+2 UTC
 
 
       - name: Trigger cron-monitor workflow dispatch
