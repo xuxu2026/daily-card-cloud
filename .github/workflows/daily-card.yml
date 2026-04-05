@@ -23,6 +23,11 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Set timezone to Beijing
+        uses: szenius/set-timezone@v1.2
+        with:
+          timezoneWindows: "China Standard Time"
+
       - name: Install dependencies
         run: |
           pip install playwright imgkit python-dateutil requests pillow beautifulsoup4 lxml
@@ -30,11 +35,6 @@ jobs:
       - name: Install Playwright browsers
         run: |
           playwright install msedge --with-deps
-
-      - name: Set timezone
-        run: |
-          tzutil /s "China Standard Time"
-          $env:TZ = "Asia/Shanghai"
 
       - name: Diagnostic - WeChat API
         run: |
