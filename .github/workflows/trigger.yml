@@ -1,0 +1,19 @@
+name: Trigger Card
+
+on:
+  schedule:
+    # 14:10 北京时间 = UTC 06:10
+    - cron: '10 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger main workflow
+        run: |
+          curl -s -X POST \
+            -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/xuxu2026/daily-card-cloud/actions/workflows/daily-card.yml/dispatches \
+            -d '{"ref":"main"}'
