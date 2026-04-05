@@ -4,9 +4,9 @@ on:
   schedule:
     # 北京时间 = UTC - 8
     # 14:30 北京 = UTC 06:30（次日）
-    # 09:30 北京 = UTC 01:30（次日）
-    # 当前 UTC 时间段: 加一个近期测试cron
-    - cron: '25 7 * * *'
+    # 14:35 北京 = UTC 06:35（次日，保底）
+    - cron: '30 6 * * *'
+    - cron: '35 6 * * *'
   workflow_dispatch:
 
 jobs:
