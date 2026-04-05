@@ -2,9 +2,9 @@ name: Daily Card
 
 on:
   schedule:
-    # 每天早上 9:30 北京时间 = UTC 1:30
+    # 每天 09:30 北京时间 = UTC 01:30
     - cron: '30 1 * * *'
-  workflow_dispatch:  # 手动触发
+  workflow_dispatch:
 
 jobs:
   run:
@@ -27,23 +27,14 @@ jobs:
         run: |
           playwright install msedge --with-deps
 
-      - name: Set timezone to China Standard Time
+      - name: Set timezone
         run: |
           tzutil /s "China Standard Time"
           $env:TZ = "Asia/Shanghai"
 
-      - name: Diagnostic - Test WeChat API reachability
+      - name: Diagnostic - WeChat API
         run: |
-          python -c "
-import requests, os
-url = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=4a41bb57-cabb-4d9a-a7be-1d33064bf98b'
-try:
-    r = requests.post(url, json={'msgtype':'text','text':{'content':'🔔 云端网络诊断测试'}}, timeout=10)
-    print('WECHAT_API_STATUS:', r.status_code)
-    print('WECHAT_API_RESPONSE:', r.text)
-except Exception as e:
-    print('WECHAT_API_ERROR:', str(e))
-"
+          python -c "import requests; r = requests.post('https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=4a41bb57-cabb-4d9a-a7be-1d33064bf98b', json={'msgtype':'text','text':{'content':'[云端诊断] 测试消息'}}, timeout=10); print('WECHAT_STATUS:', r.status_code, r.json())"
 
       - name: Run daily card generator
         env:
