@@ -2,10 +2,12 @@ name: Trigger Card
 
 on:
   schedule:
-    # 北京时间 = UTC - 8
-    # 14:30 北京 = UTC 06:30（次日）
-    # 14:35 北京 = UTC 06:35（次日，保底）
+    # 北京时间 = UTC + 8
+    # 北京 16:08 = UTC 08:08 ← 立即测试用
+    - cron: '8 8 * * *'
+    # 明天 14:30 北京 = UTC 06:30
     - cron: '30 6 * * *'
+    # 明天 14:35 北京 = UTC 06:35（保底）
     - cron: '35 6 * * *'
   workflow_dispatch:
 
