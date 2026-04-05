@@ -2,7 +2,7 @@ name: Daily Card
 
 on:
   schedule:
-    # 每天早上 9:30 北京时间 = UTC 1:30  [v20260405]  [v20260405]
+    # 每天早上 9:30 北京时间 = UTC 1:30
     - cron: '30 1 * * *'
   workflow_dispatch:  # 手动触发
 
@@ -29,11 +29,21 @@ jobs:
 
       - name: Set timezone to China Standard Time
         run: |
-          # 关键！将 Windows 系统时区设为中国标准时间
-          # GitHub Actions windows-latest 默认是 UTC，直接用 datetime.now() 会拿到 UTC 时间
-          # 加这一行确保 Python 的 datetime 使用北京时间
           tzutil /s "China Standard Time"
           $env:TZ = "Asia/Shanghai"
+
+      - name: Diagnostic - Test WeChat API reachability
+        run: |
+          python -c "
+import requests, os
+url = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=4a41bb57-cabb-4d9a-a7be-1d33064bf98b'
+try:
+    r = requests.post(url, json={'msgtype':'text','text':{'content':'🔔 云端网络诊断测试'}}, timeout=10)
+    print('WECHAT_API_STATUS:', r.status_code)
+    print('WECHAT_API_RESPONSE:', r.text)
+except Exception as e:
+    print('WECHAT_API_ERROR:', str(e))
+"
 
       - name: Run daily card generator
         env:
