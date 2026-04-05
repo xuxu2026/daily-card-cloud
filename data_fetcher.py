@@ -397,33 +397,60 @@ def get_weather_hefeng_supplement(location_id: str) -> dict:
 
 
 def get_weather_qweather_fallback(location_id: str) -> dict:
-
-    """和风天气回退——彩之颜温度获取失败时，用和风获取温度/天气/湿度"""
-
-    url = f"https://{QWEATHER_API_HOST}/v7/weather/now"
-
+    """
+    和风天气回退——彩之颜数据不完整时，用和风获取完整数据。
+    同时获取当前天气和3天预报，确保 daily 数据可用。
+    """
+    base = f"https://{QWEATHER_API_HOST}/v7/weather"
     params = {"location": location_id, "key": QWEATHER_API_KEY, "lang": "zh"}
 
-    result = {"temp": "--", "text": "--", "humidity": "--"}
+    result = {
+        "temp": "--",
+        "text": "--",
+        "humidity": "--",
+        "windDir": "--",
+        "windScale": "--",
+        "daily": {},
+    }
 
     try:
+        # 同时获取当前天气和3天预报
+        now_resp = requests.get(f"{base}/now", params=params, timeout=15)
+        daily_resp = requests.get(f"{base}/3d", params=params, timeout=15)
 
-        resp = requests.get(url, params=params, timeout=10)
+        now_data = now_resp.json() if now_resp.status_code == 200 else {}
+        daily_data = daily_resp.json() if daily_resp.status_code == 200 else {}
 
-        data = resp.json()
-
-        if data.get("code") == "200" and data.get("now"):
-
-            now = data["now"]
-
+        if now_data.get("code") == "200" and now_data.get("now"):
+            now = now_data["now"]
             result["temp"] = now.get("temp", "--")
-
             result["text"] = now.get("text", "--")
-
             result["humidity"] = now.get("humidity", "--")
+            # /now 接口无独立风向字段，windDir/windScale 留 "--"（由彩云兜底）
+
+        if daily_data.get("code") == "200" and daily_data.get("daily"):
+            # 转换和风预报格式为彩云格式，供 is_weather_complete 和合并使用
+            qw_daily = daily_data["daily"]
+            # 简单天气文字到 skycon 值映射
+            SKYCON_FROM_TEXT = {
+                "晴": "CLEAR_DAY", "多云": "PARTLY_CLOUDY_DAY", "阴": "CLOUDY",
+                "小雨": "LIGHT_RAIN", "中雨": "MODERATE_RAIN", "大雨": "HEAVY_RAIN",
+                "暴雨": "STORM_RAIN", "雷阵雨": "THUNDER_SHOWER", "阵雨": "SHOWER",
+                "小雪": "LIGHT_SNOW", "中雪": "MODERATE_SNOW", "大雪": "HEAVY_SNOW",
+                "雨夹雪": "SLEET", "雾": "FOG", "霾": "HAZE", "沙尘": "SAND",
+            }
+            result["daily"] = {
+                "temperature": [
+                    {"max": int(d["tempMax"]), "min": int(d["tempMin"])}
+                    for d in qw_daily
+                ],
+                "skycon": [
+                    {"value": SKYCON_FROM_TEXT.get(d["textDay"], "UNKNOWN")}
+                    for d in qw_daily
+                ],
+            }
 
     except Exception:
-
         pass
 
     return result
@@ -517,52 +544,44 @@ def get_social_observation(lat: float, lon: float) -> dict:
 
 
 def is_weather_complete(data: dict) -> bool:
-
     """
-
-    检查天气数据是否完整（任一关键字段缺失则视为不完整，需降级换 API）
-
+    检查天气数据是否完整（任一关键字段缺失则视为不完整，需降级换 API）。
+    核心字段（必须有）：温度、天气、湿度、每日预报。
+    风向风力不强制要求（和风不提供，合并时会由彩云兜底）。
     """
-
     result = (
-
         data.get("temp") != "--"
-
         and data.get("text") != "--"
-
         and data.get("humidity") != "--"
-
-        and data.get("windDir") != "--"
-
-        and data.get("windScale") != "--"
-
+        and data.get("windDir", "--") != "--"   # 彩云有，和风无（设为"--"）
+        and data.get("windScale", "--") != "--"
     )
-
     daily_temp = data.get("daily", {}).get("temperature", [])
-
     daily_sky = data.get("daily", {}).get("skycon", [])
-
     if not daily_temp or len(daily_temp) < 1:
-
         result = False
-
     elif daily_temp[0].get("max") in (None, 0, "") or daily_temp[0].get("min") in (None, 0, ""):
-
         result = False
-
     elif not daily_sky or not daily_sky[0].get("value"):
-
         result = False
-
     elif len(daily_temp) >= 2:
-
         t1 = daily_temp[1]
-
         if t1.get("max") in (None, 0, "") or t1.get("min") in (None, 0, ""):
-
             result = False
-
     return result
+
+
+def is_weather_basic(data: dict) -> bool:
+    """
+    检查基础数据是否完整（用于和风回退，和风无风向风力）。
+    只要温度+天气+湿度+每日预报存在就算基本完整。
+    """
+    return (
+        data.get("temp") != "--"
+        and data.get("text") != "--"
+        and data.get("humidity") != "--"
+        and bool(data.get("daily", {}).get("temperature"))
+    )
 
 
 
@@ -644,18 +663,14 @@ def get_weather(lat: float, lon: float, location_id: str = "", city_name: str = 
 
             fb = get_weather_qweather_fallback(location_id)
 
-            if fb.get("temp") != "--":
-
+            # 和风提供了温度+天气+湿度+每日预报（无风向风力），够用了就停
+            if is_weather_basic(fb):
                 qweather_data = fb
-
                 qweather_success = True
-
                 break
 
             if api_retries["qweather"] < MAX_SINGLE_API_RETRIES:
-
                 time.sleep(API_RETRY_DELAY)
-
             api_idx += 1
 
 
@@ -780,7 +795,8 @@ def get_weather(lat: float, lon: float, location_id: str = "", city_name: str = 
 
         "air_level": best_or(caiyun_data.get("aqi_level"), qweather_data.get("aqi_level"), "--"),
 
-        "daily": caiyun_data.get("daily") or {},
+        # 优先用彩云预报，彩云失败时用和风预报兜底
+        "daily": caiyun_data.get("daily") or qweather_data.get("daily") or {},
 
         "indices": {},
 
@@ -792,44 +808,30 @@ def get_weather(lat: float, lon: float, location_id: str = "", city_name: str = 
 
 
 
-# 从彩之颜daily中提取今明两天
+# 从彩之颜daily中提取今明两天，彩云失败时用和风兜底
 
-    daily = caiyun_data.get("daily", {})
+    # 优先使用彩云预报，失败则用和风预报
+    caiyun_daily = caiyun_data.get("daily", {})
+    qweather_daily = qweather_data.get("daily", {}) or {}
+    daily = caiyun_daily if caiyun_daily.get("temperature") else qweather_daily
 
     temperature = daily.get("temperature", [])
-
     skycon = daily.get("skycon", [])
 
-    
-
     if temperature and len(temperature) >= 1:
-
         t = temperature[0]
-
         result["today"] = {
-
             "tempMax": str(int(t.get("max", 0))),
-
             "tempMin": str(int(t.get("min", 0))),
-
             "textDay": SKYCON_MAP.get(skycon[0].get("value", "UNKNOWN") if skycon else "UNKNOWN", "--"),
-
         }
 
-    
-
     if temperature and len(temperature) >= 2:
-
         t = temperature[1]
-
         result["tomorrow"] = {
-
             "tempMax": str(int(t.get("max", 0))),
-
             "tempMin": str(int(t.get("min", 0))),
-
             "textDay": SKYCON_MAP.get(skycon[1].get("value", "UNKNOWN") if len(skycon) > 1 else "UNKNOWN", "--"),
-
         }
 
 
