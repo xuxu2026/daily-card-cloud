@@ -701,8 +701,8 @@ def _merge_weather(caiyun: dict, qweather: dict, juhe: dict, hefeng_sup: dict) -
         'windScale': best(primary.get('windScale'), qweather.get('windScale')),
         'aqi': best(primary.get('aqi'), qweather.get('aqi')),
         'aqi_level': best(primary.get('aqi_level'), qweather.get('aqi_level')),
-        'uv': best(primary.get('uv'), qweather.get('uv')),
-        'dress': best(primary.get('dress'), qweather.get('dress')),
+        'uv': best(primary.get('uv'), qweather.get('uv'), hefeng_sup.get('uv', '')),
+        'dress': best(primary.get('dress'), qweather.get('dress'), hefeng_sup.get('dress', '')),
         'daily': merged_daily,
         'temp_source': primary_name,
     }
