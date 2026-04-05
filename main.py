@@ -53,25 +53,42 @@ LOCK_FILE = Path(__file__).parent / ".running.lock"
 
 
 def acquire_lock():
-    """获取进程锁，防止脚本并发执行"""
+    """获取进程锁，防止脚本并发执行（跨平台）"""
+    import errno
     lock_file = open(LOCK_FILE, "w")
     try:
-        import msvcrt
-        msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
-        lock_file.write(str(os.getpid()))
-        lock_file.flush()
-        return lock_file
-    except IOError:
-        print("[✗] 脚本已在运行中，退出")
+        if os.name == "nt":
+            # Windows：使用 msvcrt 文件锁
+            import msvcrt
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+            lock_file.write(str(os.getpid()))
+            lock_file.flush()
+            return lock_file
+        else:
+            # Linux/macOS：使用 fcntl
+            import fcntl
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            lock_file.write(str(os.getpid()))
+            lock_file.flush()
+            return lock_file
+    except (IOError, OSError) as e:
+        if e.errno in (errno.EWOULDBLOCK, errno.EAGAIN):
+            print("[*] 脚本已在运行中，退出")
+        else:
+            print(f"[*] 获取锁失败: {e}")
         lock_file.close()
         sys.exit(0)
 
 
 def release_lock(lock_file):
-    """释放进程锁"""
+    """释放进程锁（跨平台）"""
     try:
-        import msvcrt
-        msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+        if os.name == "nt":
+            import msvcrt
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
         lock_file.close()
         LOCK_FILE.unlink(missing_ok=True)
     except Exception:
