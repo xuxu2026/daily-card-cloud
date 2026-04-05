@@ -3,7 +3,7 @@ name: Daily Card
 on:
   schedule:
     # 每天 09:30 北京时间 = UTC 01:30
-    - cron: '05 13 * * *'
+    - cron: '30 1 * * *'
   workflow_dispatch:
 
 jobs:
@@ -46,15 +46,3 @@ jobs:
           XHS_COOKIE: ${{ secrets.XHS_COOKIE }}
           JUHE_API_KEY: ${{ secrets.JUHE_API_KEY }}
         run: python main.py
-2 UTC
-
-
-      - name: Trigger cron-monitor workflow dispatch
-        run: |
-          echo "Triggering cron-monitor via workflow_dispatch..."
-          curl -s -X POST \
-            "https://api.github.com/repos/xuxu2026/daily-card-cloud/actions/workflows/cron-monitor.yml/dispatches" \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            -d "{\"ref\":\"main\"}"
-          echo "Done - cron-monitor triggered"
