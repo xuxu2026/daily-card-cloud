@@ -2,30 +2,49 @@ name: Daily Card
 
 on:
   schedule:
-    - cron: '0 1 * * *'
+    # 每天 09:30 北京时间 = UTC 01:30
+    - cron: '30 1 * * *'
+    # 16:08 北京时间测试 = UTC 08:08
+    - cron: '8 8 * * *'
   workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  run:
+    runs-on: windows-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install system fonts for CJK
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq fonts-noto-cjk fonts-noto-core
+
       - name: Install dependencies
-        run: pip install playwright requests beautifulsoup4 lxml && playwright install chromium
-      - name: Generate and push card
+        run: |
+          pip install playwright imgkit python-dateutil requests pillow beautifulsoup4 lxml
+
+      - name: Install Playwright browsers
+        run: |
+          playwright install msedge --with-deps
+
+      - name: Set timezone
+        run: |
+          tzutil /s "China Standard Time"
+          $env:TZ = "Asia/Shanghai"
+
+      - name: Diagnostic - WeChat API
+        run: |
+          python -c "import requests; r = requests.post('https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=4a41bb57-cabb-4d9a-a7be-1d33064bf98b', json={'msgtype':'text','text':{'content':'[云端诊断] 测试消息'}}, timeout=10); print('WECHAT_STATUS:', r.status_code, r.json())"
+
+      - name: Run daily card generator
         env:
-          WXBOT_WEBHOOK: ${{ secrets.WXBOT_WEBHOOK }}
+          TZ: Asia/Shanghai
+          WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
+          CAIYUN_TOKEN: ${{ secrets.CAIYUN_TOKEN }}
+          QWEATHER_API_HOST: ${{ secrets.QWEATHER_API_HOST }}
+          QWEATHER_API_KEY: ${{ secrets.QWEATHER_API_KEY }}
+          XHS_COOKIE: ${{ secrets.XHS_COOKIE }}
           JUHE_API_KEY: ${{ secrets.JUHE_API_KEY }}
-          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
         run: python main.py
-# re-reg-sched 2026-04-05T16:29:20 UTC
