@@ -3,14 +3,20 @@ name: Trigger Card
 on:
   workflow_dispatch:
 
+permissions:
+  actions: write
+
 jobs:
   trigger:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger main workflow
         run: |
-          curl -s -X POST \
+          RESPONSE=$(curl -s -w "%{http_code}" -o /tmp/curl_response.txt -X POST \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/xuxu2026/daily-card-cloud/actions/workflows/daily-card.yml/dispatches \
-            -d '{"ref":"main"}'
+            -d '{"ref":"main"}')
+          echo "HTTP Status: $RESPONSE"
+          cat /tmp/curl_response.txt || true
+          if [ "$RESPONSE" != "204" ]; then exit 1; fi
