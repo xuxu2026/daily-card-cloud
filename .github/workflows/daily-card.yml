@@ -1,13 +1,7 @@
 name: Daily Card
 
-'on':
+on:
   workflow_dispatch:
-  schedule:
-    # 每天 9:30 AM 北京时间 = 01:30 UTC
-    - cron: '30 1 * * *'
-  push:
-    paths:
-      - '.trigger-marker'
 
 jobs:
   run:
@@ -22,11 +16,6 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Set timezone to Beijing
-        uses: szenius/set-timezone@v1.2
-        with:
-          timezoneWindows: "China Standard Time"
-
       - name: Install dependencies
         run: |
           pip install playwright imgkit python-dateutil requests pillow beautifulsoup4 lxml
@@ -35,11 +24,21 @@ jobs:
         run: |
           playwright install msedge --with-deps
 
-      - name: Diagnostic - WeChat API
-        env:
-          PYTHONIOENCODING: utf-8
+      - name: Set timezone
         run: |
-          python -c "import requests; from datetime import datetime, timezone, timedelta; bj_now = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=8))); msg = bj_now.strftime('%m%d') + '日早安推送，请及时发布朋友圈'; r = requests.post('https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=4a41bb57-cabb-4d9a-a7be-1d33064bf98b', json={'msgtype': 'text', 'text': {'content': '[云端诊断] ' + msg}}, timeout=10); print('WECHAT_STATUS:', r.status_code, r.json())"
+          tzutil /s "China Standard Time"
+          $env:TZ = "Asia/Shanghai"
+
+      - name: Diagnostic - WeChat API
+        run: |
+          python -c "
+import requests
+from datetime import datetime, timezone, timedelta
+bj_now = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=8)))
+msg = bj_now.strftime('%m月%d日') + '早安推送，请及时发布朋友圈'
+r = requests.post('https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=4a41bb57-cabb-4d9a-a7be-1d33064bf98b', json={'msgtype':'text','text':{'content':'[云上夏天] '+msg}}, timeout=10)
+print('WECHAT_STATUS:', r.status_code, r.json())
+"
 
       - name: Run daily card generator
         env:
