@@ -5,12 +5,15 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   trigger:
     runs-on: ubuntu-latest
     steps:
       - name: Push marker to trigger daily-card workflow
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python3 << 'EOF'
           import requests
@@ -47,5 +50,8 @@ jobs:
               payload['sha'] = sha
 
           r = requests.put(url, headers=headers, json=payload)
-          print('Status:', r.status_code, r.text[:100])
+          print('Status:', r.status_code)
+          print('Response:', r.text[:200])
+          if r.status_code not in (200, 201):
+              exit(1)
           EOF
