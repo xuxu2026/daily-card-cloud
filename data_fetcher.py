@@ -130,10 +130,133 @@ except ImportError:
 
 # ─────────────────────────────────────────────
 
-# 1. 天气数据（彩之颜为主 + 和风天气补充）
+# 1. 天气数据（Open-Meteo 外网优先 + 国内 API 兜底）
 
 # ─────────────────────────────────────────────
 
+
+# Open-Meteo WMO 天气代码 → SKYCON 中文映射
+WMO_CODE_MAP = {
+    0: ("CLEAR_DAY", "晴"),
+    1: ("CLEAR_DAY", "晴间多云"),
+    2: ("PARTLY_CLOUDY_DAY", "多云"),
+    3: ("CLOUDY", "阴"),
+    45: ("FOG", "雾"),
+    48: ("FOG", "雾凇"),
+    51: ("DRIZZLE", "毛毛雨"),
+    53: ("DRIZZLE", "毛毛雨"),
+    55: ("DRIZZLE", "毛毛雨"),
+    61: ("LIGHT_RAIN", "小雨"),
+    63: ("MODERATE_RAIN", "中雨"),
+    65: ("HEAVY_RAIN", "大雨"),
+    71: ("LIGHT_SNOW", "小雪"),
+    73: ("MODERATE_SNOW", "中雪"),
+    75: ("HEAVY_SNOW", "大雪"),
+    77: ("SNOW", "米雪"),
+    80: ("SHOWER", "阵雨"),
+    81: ("SHOWER", "中阵雨"),
+    82: ("SHOWER", "强阵雨"),
+    85: ("LIGHT_SNOW", "阵雪"),
+    86: ("MODERATE_SNOW", "强阵雪"),
+    95: ("THUNDERSTORM", "雷暴"),
+    96: ("THUNDERSTORM", "雷暴+冰雹"),
+    99: ("THUNDERSTORM", "雷暴+大冰雹"),
+}
+
+
+def get_weather_openmeteo(lat: float, lon: float) -> dict:
+    """
+    使用 Open-Meteo API 获取天气（外网优先，永久免费，无需 Key）。
+    返回格式与彩云/和风保持一致，供合并逻辑使用。
+    """
+    result = {
+        "temp": "--",
+        "text": "--",
+        "humidity": "--",
+        "windDir": "--",
+        "windScale": "--",
+        "aqi": "--",
+        "aqi_level": "--",
+        "uv": "",
+        "dress": "",
+        "daily": {},
+        "_openmeteo": True,
+    }
+
+    try:
+        # 一次性请求所有需要的数据
+        params = {
+            "latitude": lat,
+            "longitude": lon,
+            "current_weather": True,
+            "hourly": "temperature_2m,relativehumidity_2m,apparent_temperature,precipitation_probability",
+            "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode,sunrise,sunset,uv_index_max,precipitation_probability_max",
+            "timezone": "Asia/Shanghai",
+            "forecast_days": 2,
+        }
+        resp = requests.get("https://api.open-meteo.com/v1/forecast", params=params, timeout=15)
+        data = resp.json()
+
+        cw = data.get("current_weather", {})
+        if cw:
+            result["temp"] = str(int(cw.get("temperature", 0)))
+
+            wcode = cw.get("weathercode", 0)
+            skycon, text = WMO_CODE_MAP.get(wcode, ("UNKNOWN", f"code={wcode}"))
+            result["text"] = text
+
+            # 风向角度转文字
+            wind_dir_deg = cw.get("winddirection", 0)
+            dirs = ["北", "东北", "东", "东南", "南", "西南", "西", "西北"]
+            result["windDir"] = dirs[int((wind_dir_deg + 22.5) / 45) % 8]
+            result["windScale"] = wind_speed_to_scale(cw.get("windspeed", 0) / 3.6)  # km/h → m/s
+
+        # 湿度（当前小时）
+        hourly = data.get("hourly", {})
+        humidity_vals = hourly.get("relativehumidity_2m", [])
+        if humidity_vals:
+            result["humidity"] = str(int(humidity_vals[0]))
+
+        # 每日预报
+        daily = data.get("daily", {})
+        max_temps = daily.get("temperature_2m_max", [])
+        min_temps = daily.get("temperature_2m_min", [])
+        daily_codes = daily.get("weathercode", [])
+        uv_vals = daily.get("uv_index_max", [])
+        precip_probs = daily.get("precipitation_probability_max", [])
+        sunrises = daily.get("sunrise", [])
+        sunsets = daily.get("sunset", [])
+
+        daily_temp = []
+        daily_sky = []
+        for i in range(min(2, len(max_temps))):
+            if max_temps[i] is not None and min_temps[i] is not None:
+                daily_temp.append({"max": int(max_temps[i]), "min": int(min_temps[i])})
+            code = daily_codes[i] if i < len(daily_codes) else 0
+            skycon, _ = WMO_CODE_MAP.get(code, ("UNKNOWN", ""))
+            daily_sky.append({"value": skycon})
+
+        result["daily"] = {
+            "temperature": daily_temp,
+            "skycon": daily_sky,
+        }
+
+        # UV 指数
+        if uv_vals and uv_vals[0] is not None:
+            uv = uv_vals[0]
+            uv_desc = "极强" if uv >= 11 else "很强" if uv >= 8 else "强" if uv >= 5 else "中等" if uv >= 3 else "弱"
+            result["uv"] = f"{uv_desc}（UV={uv}）"
+
+        # 降水概率（用于判断是否需要带伞）
+        if precip_probs and precip_probs[0] is not None:
+            pp = int(precip_probs[0])
+            if pp >= 70:
+                result["dress"] = f"降水概率{pp}%，建议带伞"
+
+    except Exception as e:
+        result["error"] = str(e)
+
+    return result
 
 
 def get_weather_caiyun(lat: float, lon: float) -> dict:
@@ -641,11 +764,13 @@ def _score_weather(data: dict) -> int:
     return score
 
 
-def _merge_weather(caiyun: dict, qweather: dict, juhe: dict, hefeng_sup: dict) -> dict:
+def _merge_weather(caiyun: dict, qweather: dict, juhe: dict, hefeng_sup: dict, openmeteo: dict = None) -> dict:
     """
-    以得分最高的 API 为主数据源，其余 API 补全缺失字段。
+    Open-Meteo 优先（外网民好），其余 API 补全缺失字段。
+    Open-Meteo 本身数据完整时直接用它；缺失字段再从其他来源补。
     """
     sources = [
+        ('Open-Meteo', openmeteo, _score_weather(openmeteo) + 10 if openmeteo else -1),  # 外网优先加分
         ('彩云', caiyun, _score_weather(caiyun)),
         ('和风', qweather, _score_weather(qweather)),
         ('聚合', juhe, _score_weather(juhe)),
@@ -718,8 +843,8 @@ def _merge_weather(caiyun: dict, qweather: dict, juhe: dict, hefeng_sup: dict) -
         'windScale': best(primary.get('windScale'), qweather.get('windScale'), juhe.get('windScale')),
         'aqi': best(primary.get('aqi'), qweather.get('aqi'), juhe.get('aqi')),
         'aqi_level': best(primary.get('aqi_level'), qweather.get('aqi_level'), juhe.get('aqi_level')),
-        'uv': best(primary.get('uv'), qweather.get('uv'), hefeng_sup.get('uv', '')),
-        'dress': best(primary.get('dress'), qweather.get('dress'), hefeng_sup.get('dress', '')),
+        'uv': best(primary.get('uv'), openmeteo.get('uv', ''), qweather.get('uv'), hefeng_sup.get('uv', '')),
+        'dress': best(primary.get('dress'), openmeteo.get('dress', ''), qweather.get('dress'), hefeng_sup.get('dress', '')),
         'daily': merged_daily,
         'temp_source': primary_name,
     }
@@ -727,12 +852,16 @@ def _merge_weather(caiyun: dict, qweather: dict, juhe: dict, hefeng_sup: dict) -
 
 def get_weather(lat: float, lon: float, location_id: str = '', city_name: str = '') -> dict:
     """
-    获取单个城市的天气信息（三 API 全部查完再合并）。
+    获取单个城市的天气信息（外网优先 + 国内 API 兜底）。
     策略：
-      1. 彩云 + 和风 + 聚合 各自独立调用
-      2. 三 API 全部调用完毕后，以得分最高的为主数据源，其余补全缺失字段
-      3. 若所有 API 均无有效数据，返回全 -- 兜底数据
+      1. Open-Meteo（外网首选，永久免费）
+      2. 彩之颜（国内城市精准数据）
+      3. 和风天气（补充和备用）
+      4. 聚合数据（第三备用）
+      全部查完后以得分最高的为主数据源，其余补全缺失字段。
     """
+    # 外网优先
+    openmeteo = get_weather_openmeteo(lat, lon)
     caiyun = get_weather_caiyun(lat, lon)
     qweather = {'temp': '--', 'text': '--', 'humidity': '--'}
     juhe = {'temp': '--', 'text': '--', 'humidity': '--'}
@@ -745,8 +874,8 @@ def get_weather(lat: float, lon: float, location_id: str = '', city_name: str = 
     if location_id:
         hefeng_sup = get_weather_hefeng_supplement(location_id)
 
-    # 核心：合并所有数据源
-    merged = _merge_weather(caiyun, qweather, juhe, hefeng_sup)
+    # 核心：合并所有数据源（Open-Meteo 加入合并）
+    merged = _merge_weather(caiyun, qweather, juhe, hefeng_sup, openmeteo)
 
     def n(v, default='--'):
         return v if (v and v != '--') else default
