@@ -1,7 +1,10 @@
 name: Daily Card
 
-on:
+'on':
   workflow_dispatch:
+  schedule:
+    # 每天 9:30 AM 北京时间 = 01:30 UTC
+    - cron: '30 1 * * *'
   push:
     paths:
       - '.trigger-marker'
