@@ -1277,12 +1277,9 @@ def build_html(data, style=None):
         else:
             uv_text = "紫外线 --"
         
-        # 体感温度 + 降水概率（替换"穿衣"）
-        feels_text = f"🌡️ {feels_like}" if feels_like else ""
-        precip_text = f"☔ {precip_prob}" if precip_prob and precip_prob != "--" else ""
-        if dress and dress not in (precip_text, feels_text):
-            # dress 还有内容（如"☔ 降水93%"），不需要重复显示
-            pass
+        # 体感温度 + 降水概率（直接文字，无图标）
+        feels_text = f"体感{feels_like}" if feels_like else ""
+        precip_text = f"降水{precip_prob}" if precip_prob and precip_prob != "--" else ""
 
         # AQI等级映射（去掉图标，改用完整文字）
         if isinstance(air, str):
