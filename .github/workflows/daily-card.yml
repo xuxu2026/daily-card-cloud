@@ -1,44 +1,45 @@
 name: Daily Card
 
 on:
-  schedule:
-    # 每天早上 9:30 北京时间 = UTC 1:30
-    - cron: '30 1 * * *'
-  workflow_dispatch:  # 手动触发
+  workflow_dispatch:
 
 jobs:
   run:
     runs-on: windows-latest
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          
+
+      - name: Set timezone to Beijing
+        uses: szenius/set-timezone@v1.2
+        with:
+          timezoneWindows: "China Standard Time"
+
       - name: Install dependencies
         run: |
-          pip install playwright imgkit python-dateutil requests pillow
-          
+          pip install playwright imgkit python-dateutil requests pillow beautifulsoup4 lxml
+
       - name: Install Playwright browsers
         run: |
           playwright install msedge --with-deps
-          
-      - name: Install Chinese fonts
+
+      - name: Diagnostic - WeChat API
         run: |
-          # Download and install Microsoft YaHei (微软雅黑)
-          $fontUrl = "https://github.com/microsoft/vscode/files/5262716/CJKFonts.zip"
-          Invoke-WebRequest -Uri $fontUrl -OutFile "fonts.zip"
-          Expand-Archive -Path "fonts.zip" -DestinationPath "$env:LOCALAPPDATA\Microsoft\Windows\Fonts" -Force
-          
+          python -c "import requests; r = requests.post('https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=4a41bb57-cabb-4d9a-a7be-1d33064bf98b', json={'msgtype':'text','text':{'content':'[云端诊断] 测试消息'}}, timeout=10); print('WECHAT_STATUS:', r.status_code, r.json())"
+
       - name: Run daily card generator
         env:
+          TZ: Asia/Shanghai
           WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
           CAIYUN_TOKEN: ${{ secrets.CAIYUN_TOKEN }}
           QWEATHER_API_HOST: ${{ secrets.QWEATHER_API_HOST }}
           QWEATHER_API_KEY: ${{ secrets.QWEATHER_API_KEY }}
           XHS_COOKIE: ${{ secrets.XHS_COOKIE }}
+          JUHE_API_KEY: ${{ secrets.JUHE_API_KEY }}
         run: python main.py
