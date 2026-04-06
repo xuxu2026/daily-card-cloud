@@ -29,24 +29,11 @@ jobs:
               'Content-Type': 'application/json'
           }
 
-          # 获取 daily-card workflow ID
-          wf_url = f'https://api.github.com/repos/{REPO}/actions/workflows'
-          r = requests.get(wf_url, headers=headers)
-          workflows = r.json().get('workflows', [])
-          wf_id = None
-          for wf in workflows:
-              if 'daily-card' in wf.get('path', '') or wf.get('name') == 'Daily Card':
-                  wf_id = wf['id']
-                  print(f"Found workflow: {wf['name']} (ID: {wf_id})")
-                  break
-
-          if not wf_id:
-              print('Workflow not found!')
-              exit(1)
+          # daily-card workflow ID (固定值)
+          WF_ID = '256176970'
 
           # 触发 workflow_dispatch
-          bj_now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
-          disp_url = f'https://api.github.com/repos/{REPO}/actions/workflows/{wf_id}/dispatches'
+          disp_url = f'https://api.github.com/repos/{REPO}/actions/workflows/{WF_ID}/dispatches'
           r = requests.post(disp_url, headers=headers, json={'ref': 'main', 'inputs': {}})
           print(f'Dispatch status: {r.status_code}')
           print(f'Response: {r.text[:300]}')
