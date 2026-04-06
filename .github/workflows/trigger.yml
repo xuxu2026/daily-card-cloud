@@ -4,19 +4,48 @@ on:
   workflow_dispatch:
 
 permissions:
-  actions: write
+  contents: write
 
 jobs:
   trigger:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger main workflow
+      - name: Push marker to trigger daily-card workflow
         run: |
-          RESPONSE=$(curl -s -w "%{http_code}" -o /tmp/curl_response.txt -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/xuxu2026/daily-card-cloud/actions/workflows/daily-card.yml/dispatches \
-            -d '{"ref":"main"}')
-          echo "HTTP Status: $RESPONSE"
-          cat /tmp/curl_response.txt || true
-          if [ "$RESPONSE" != "204" ]; then exit 1; fi
+          python3 << 'EOF'
+          import requests
+          import base64
+          import datetime
+          import os
+
+          TOKEN = os.environ['GITHUB_TOKEN']
+          REPO = os.environ['GITHUB_REPOSITORY']
+          BRANCH = 'main'
+          MARKER = '.trigger-marker'
+
+          headers = {
+              'Authorization': 'token ' + TOKEN,
+              'Accept': 'application/vnd.github.v3+json',
+              'Content-Type': 'application/json'
+          }
+
+          # 获取当前 marker 内容
+          url = 'https://api.github.com/repos/%s/contents/%s' % (REPO, MARKER)
+          r = requests.get(url, headers=headers, params={'ref': BRANCH})
+          sha = r.json().get('sha', '') if r.status_code == 200 else ''
+
+          # 更新 marker（北京时间）
+          bj_now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
+          content = bj_now.strftime('%Y-%m-%d %H:%M:%S CST\n')
+
+          payload = {
+              'message': 'trigger daily-card: ' + bj_now.strftime('%m/%d %H:%M'),
+              'content': base64.b64encode(content.encode()).decode(),
+              'branch': BRANCH
+          }
+          if sha:
+              payload['sha'] = sha
+
+          r = requests.put(url, headers=headers, json=payload)
+          print('Status:', r.status_code, r.text[:100])
+          EOF
