@@ -263,7 +263,7 @@ def get_weather_openmeteo(lat: float, lon: float) -> dict:
         if precip_probs and precip_probs[0] is not None:
             pp = int(precip_probs[0])
             if pp >= 50:
-                result["dress"] = f"☔ 降水{pp}%"
+                result["dress"] = f"降水{pp}%"
 
     except Exception as e:
         result["error"] = str(e)
