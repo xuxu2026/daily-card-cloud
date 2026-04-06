@@ -2,8 +2,8 @@ name: Daily Card
 
 on:
   schedule:
-    # 北京时间 09:30 每日正式推送（timezone指定后cron直接写北京时间）
-    - cron: '30 9 * * *'
+    # 北京时间 10:00 每日正式推送（timezone指定后cron直接写北京时间）
+    - cron: '0 10 * * *'
       timezone: Asia/Shanghai
     # 北京时间 02:00 测试窗口
     - cron: '0 2 * * *'
