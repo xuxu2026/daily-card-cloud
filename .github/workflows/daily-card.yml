@@ -30,12 +30,15 @@ jobs:
           $env:TZ = "Asia/Shanghai"
 
       - name: Diagnostic - WeChat API
+        env:
+          PYTHONIOENCODING: utf-8
         run: |
           python -c "import requests; from datetime import datetime, timezone, timedelta; bj_now = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=8))); msg = bj_now.strftime('%m月%d日') + '早安推送，请及时发布朋友圈'; r = requests.post('https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=4a41bb57-cabb-4d9a-a7be-1d33064bf98b', json={'msgtype': 'text', 'text': {'content': '[云上夏天] ' + msg}}, timeout=10); print('WECHAT_STATUS:', r.status_code, r.json())"
 
       - name: Run daily card generator
         env:
           TZ: Asia/Shanghai
+          PYTHONIOENCODING: utf-8
           WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
           CAIYUN_TOKEN: ${{ secrets.CAIYUN_TOKEN }}
           QWEATHER_API_HOST: ${{ secrets.QWEATHER_API_HOST }}
