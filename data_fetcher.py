@@ -853,8 +853,9 @@ def _merge_weather(caiyun: dict, qweather: dict, juhe: dict, hefeng_sup: dict, o
         'humidity': best(primary.get('humidity'), qweather.get('humidity'), juhe.get('humidity')),
         'windDir': best(primary.get('windDir'), qweather.get('windDir'), juhe.get('windDir')),
         'windScale': best(primary.get('windScale'), qweather.get('windScale'), juhe.get('windScale')),
-        'aqi': best(primary.get('aqi'), qweather.get('aqi'), juhe.get('aqi')),
-        'aqi_level': best(primary.get('aqi_level'), qweather.get('aqi_level'), juhe.get('aqi_level')),
+        # AQI：跳过 primary（可能是 Open-Meteo，无 AQI），直接从有 AQI 的源取
+        'aqi': best(caiyun.get('aqi'), juhe.get('aqi')),
+        'aqi_level': best(caiyun.get('aqi_level'), juhe.get('aqi_level')),
         'uv': best(primary.get('uv'), openmeteo.get('uv', ''), qweather.get('uv'), hefeng_sup.get('uv', '')),
         'dress': best(primary.get('dress'), openmeteo.get('dress', ''), qweather.get('dress'), hefeng_sup.get('dress', '')),
         'feels_like': best(primary.get('feels_like'), openmeteo.get('feels_like', ''), qweather.get('feels_like', '')),
