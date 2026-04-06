@@ -854,49 +854,57 @@ def _get_holiday_name() -> str:
 
 
 def _get_fallback_beauty(count: int) -> list:
-    """获取本地美文（节日优先，按日期确定选择）"""
+    """获取本地美文（节日优先，按日期顺序轮换确保30天不重复）"""
     from datetime import date
     texts = []
-    rng = random.Random(date.today().toordinal())  # 用日期作为种子，确保每天选择固定
-
-    # 节日优先使用节日美文
+    
+    today = date.today()
+    # 用一年中的第几天（1-366）作为索引因子
+    day_of_year = today.timetuple().tm_yday
+    
+    # 节日优先：节日美文
     if _is_holiday():
         holiday_texts = BEAUTY_TEXTS.get("holiday", [])
-        texts.extend(rng.sample(holiday_texts, min(2, len(holiday_texts))))
-
-    # 补充季节美文
+        idx = (day_of_year * 47) % len(holiday_texts)
+        texts.append(holiday_texts[idx])
+    
+    # 季节美文（主要来源）：用乘积确保分布均匀
     season = _get_season()
     season_texts = BEAUTY_TEXTS.get(season, BEAUTY_TEXTS["default"])
-    texts.extend(rng.sample(season_texts, min(2, len(season_texts))))
+    lib_len = len(season_texts)
+    
+    for i in range(count - len(texts)):
+        idx = (day_of_year * 47 + i) % lib_len
+        texts.append(season_texts[idx])
 
-    # 通用美文
-    default_texts = BEAUTY_TEXTS.get("default", [])
-    texts.extend(rng.sample(default_texts, min(1, len(default_texts))))
-
-    # 去重
-    unique_texts = list(dict.fromkeys(texts))
-    return rng.sample(unique_texts, min(count, len(unique_texts)))
+    return texts
 
 
 def _get_fallback_skincare(count: int) -> list:
-    """获取本地护肤贴士（节日优先，按日期确定选择）"""
+    """获取本地护肤贴士（节日优先，按日期顺序轮换确保30天不重复）"""
     from datetime import date
     tips = []
-    rng = random.Random(date.today().toordinal() + 1000)  # 用日期+偏移作为种子，确保每天选择固定
-
-    # 节日优先使用节日护肤贴士
+    
+    today = date.today()
+    # 用一年中的第几天（1-366）作为索引因子
+    day_of_year = today.timetuple().tm_yday
+    
+    # 节日优先：节日护肤
     if _is_holiday():
         holiday_tips = SKINCARE_TIPS.get("holiday", [])
-        tips.extend(rng.sample(holiday_tips, min(2, len(holiday_tips))))
-
-    # 补充季节护肤贴士
+        idx = (day_of_year * 53) % len(holiday_tips)  # 53是68的互质数
+        tips.append(holiday_tips[idx])
+    
+    # 季节护肤贴士（主要来源）
     season = _get_season()
     season_tips = SKINCARE_TIPS.get(season, SKINCARE_TIPS["spring"])
-    tips.extend(rng.sample(season_tips, min(3, len(season_tips))))
+    lib_len = len(season_tips)
+    
+    for i in range(count - len(tips)):
+        idx = (day_of_year * 31 + i) % lib_len  # 31是81的互质数
+        tips.append(season_tips[idx])
 
-    # 去重
-    unique_tips = list(dict.fromkeys(tips))
-    return rng.sample(unique_tips, min(count, len(unique_tips)))
+    return tips
 
 
 # ═══════════════════════════════════════════════════════════
