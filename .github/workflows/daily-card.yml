@@ -32,6 +32,7 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
           MSG_BASE64: "5pep5a6J5o6o6YCB77yM6K+35Y+K5pe25Y+R5biD5pyL5Y+L5ZyI"
+          WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
         run: |
           python -c "import base64,os; from datetime import datetime,timezone,timedelta; import requests; dt=datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=8))); msg=dt.strftime('%m')+'月'+dt.strftime('%d')+'日'+base64.b64decode(os.environ['MSG_BASE64']).decode('utf-8'); webhook=os.environ.get('WECOM_WEBHOOK_URL',''); r=requests.post(webhook,json={'msgtype':'text','text':{'content':'[云上夏天] '+msg}},timeout=10); print('WECHAT_STATUS:'+str(r.status_code))"
         env:
