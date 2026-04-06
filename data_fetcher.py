@@ -179,6 +179,8 @@ def get_weather_openmeteo(lat: float, lon: float) -> dict:
         "aqi_level": "--",
         "uv": "",
         "dress": "",
+        "feels_like": "",
+        "precip_prob": "",
         "daily": {},
         "_openmeteo": True,
     }
@@ -217,6 +219,16 @@ def get_weather_openmeteo(lat: float, lon: float) -> dict:
         if humidity_vals:
             result["humidity"] = str(int(humidity_vals[0]))
 
+        # 体感温度（当前小时）
+        apparent_vals = hourly.get("apparent_temperature", [])
+        if apparent_vals and apparent_vals[0] is not None:
+            result["feels_like"] = f"{int(apparent_vals[0])}°"
+
+        # 降水概率（当前小时百分比）
+        precip_prob_vals = hourly.get("precipitation_probability", [])
+        if precip_prob_vals and precip_prob_vals[0] is not None:
+            result["precip_prob"] = f"{int(precip_prob_vals[0])}%"
+
         # 每日预报
         daily = data.get("daily", {})
         max_temps = daily.get("temperature_2m_max", [])
@@ -247,11 +259,11 @@ def get_weather_openmeteo(lat: float, lon: float) -> dict:
             uv_desc = "极强" if uv >= 11 else "很强" if uv >= 8 else "强" if uv >= 5 else "中等" if uv >= 3 else "弱"
             result["uv"] = f"{uv_desc}（UV={uv}）"
 
-        # 降水概率（用于判断是否需要带伞）
+        # 降水概率（今日白天，降水概率 > 50% 提示带伞）
         if precip_probs and precip_probs[0] is not None:
             pp = int(precip_probs[0])
-            if pp >= 70:
-                result["dress"] = f"降水概率{pp}%，建议带伞"
+            if pp >= 50:
+                result["dress"] = f"☔ 降水{pp}%"
 
     except Exception as e:
         result["error"] = str(e)
@@ -845,6 +857,8 @@ def _merge_weather(caiyun: dict, qweather: dict, juhe: dict, hefeng_sup: dict, o
         'aqi_level': best(primary.get('aqi_level'), qweather.get('aqi_level'), juhe.get('aqi_level')),
         'uv': best(primary.get('uv'), openmeteo.get('uv', ''), qweather.get('uv'), hefeng_sup.get('uv', '')),
         'dress': best(primary.get('dress'), openmeteo.get('dress', ''), qweather.get('dress'), hefeng_sup.get('dress', '')),
+        'feels_like': best(primary.get('feels_like'), openmeteo.get('feels_like', ''), qweather.get('feels_like', '')),
+        'precip_prob': best(primary.get('precip_prob'), openmeteo.get('precip_prob', ''), qweather.get('precip_prob', '')),
         'daily': merged_daily,
         'temp_source': primary_name,
     }
@@ -895,6 +909,8 @@ def get_weather(lat: float, lon: float, location_id: str = '', city_name: str = 
         'tomorrow': {},
         'uv': merged.get('uv') or '',
         'dress': merged.get('dress') or '',
+        'feels_like': merged.get('feels_like') or '',
+        'precip_prob': merged.get('precip_prob') or '',
         'air': n(merged.get('aqi')),
         'air_level': n(merged.get('aqi_level')),
         'daily': merged.get('daily', {}),
@@ -967,6 +983,10 @@ def get_all_weather() -> list:
                 "uv": "--",
 
                 "dress": "--",
+
+                "feels_like": "--",
+
+                "precip_prob": "--",
 
             })
 
