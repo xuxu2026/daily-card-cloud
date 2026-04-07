@@ -1090,21 +1090,23 @@ def generate_css(style):
 
   .indices-row {{
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
-    gap: 5px;
+    gap: 4px;
     margin-top: 5px;
     padding-top: 5px;
     border-top: 1px dashed {style['secondary']}30;
+    overflow: hidden;
   }}
 
   .idx-item {{
     font-family: {style['label_font']};
-    font-size: 13px;
+    font-size: 12px;
     color: {style['text_light']};
     background: {style['secondary']}15;
-    padding: 2px 7px;
+    padding: 2px 4px;
     border-radius: 4px;
+    white-space: nowrap;
   }}
 
   .restriction-wrap {{
@@ -1262,6 +1264,8 @@ def build_html(data, style=None):
         tomorrow_f = w.get("tomorrow", {})
         uv = w.get("uv", "")
         dress = w.get("dress", "")
+        feels_like = w.get("feels_like", "")
+        precip_prob = w.get("precip_prob", "")
         air = w.get("air", "--")
         indices = w.get("indices", {})
         icon = weather_icon(now.get("text", ""))
@@ -1273,19 +1277,9 @@ def build_html(data, style=None):
         else:
             uv_text = "紫外线 --"
         
-        # 简化穿衣提示（去掉图标）
-        dress_text = ""
-        if dress:
-            if "长袖" in dress:
-                dress_text = "穿衣 长袖"
-            elif "外套" in dress:
-                dress_text = "穿衣 外套"
-            elif "短袖" in dress:
-                dress_text = "穿衣 短袖"
-            elif "T恤" in dress:
-                dress_text = "穿衣 T恤"
-            else:
-                dress_text = f"穿衣 {dress[:6]}"
+        # 体感温度 + 降水概率（直接文字，无图标）
+        feels_text = f"体感{feels_like}" if feels_like else ""
+        precip_text = f"降水{precip_prob}" if precip_prob and precip_prob != "--" else ""
 
         # AQI等级映射（去掉图标，改用完整文字）
         if isinstance(air, str):
@@ -1356,7 +1350,8 @@ def build_html(data, style=None):
             </div>
             <div class="tips-row">
                 <span class="tip-item">{uv_text}</span>
-                <span class="tip-item">{dress_text}</span>
+                <span class="tip-item">{feels_text}</span>
+                <span class="tip-item">{precip_text}</span>
                 <span class="tip-item">{aqi_text}</span>
             </div>
             <div class="indices-row">
@@ -1456,10 +1451,10 @@ def generate_image(data, output_path, style=None):
         from playwright.sync_api import sync_playwright
         with sync_playwright() as p:
             browser = p.chromium.launch(channel="msedge", headless=True)
-            page = browser.new_page(viewport={"width": 750, "height": 1100})
+            page = browser.new_page(viewport={"width": 750, "height": 1100}, device_scale_factor=3)
             page.goto(file_url, wait_until="networkidle", timeout=25000)
             page.wait_for_timeout(1500)
-            page.screenshot(path=output_path, type="png")
+            page.screenshot(path=output_path, type="png", full_page=False)
             browser.close()
         print(f"[✓] {output_path}")
         return True
@@ -1503,8 +1498,8 @@ if __name__ == "__main__":
         "date": "2026年04月03日",
         "weekday": "周五",
         "weather_list": [
-            {"city": "仁寿", "now": {"temp": "18", "text": "多云"}, "today": {"tempMax": "22", "tempMin": "14"}, "uv": "较弱防晒", "dress": "薄外套", "air": "良"},
-            {"city": "成都", "now": {"temp": "17", "text": "阴"}, "today": {"tempMax": "20", "tempMin": "13"}, "uv": "无需防晒", "dress": "外套", "air": "良"},
+            {"city": "仁寿", "now": {"temp": "18", "text": "多云"}, "today": {"tempMax": "22", "tempMin": "14"}, "uv": "较弱防晒", "dress": "", "feels_like": "17°", "precip_prob": "30%", "air": "良"},
+            {"city": "成都", "now": {"temp": "17", "text": "阴"}, "today": {"tempMax": "20", "tempMin": "13"}, "uv": "无需防晒", "dress": "", "feels_like": "16°", "precip_prob": "85%", "air": "良"},
         ],
         "restriction": {
             "today_date": "04月03日", "today_week": "周五", "today_restriction": "尾号 5、0 限行",
