@@ -213,21 +213,41 @@ def get_weather_openmeteo(lat: float, lon: float) -> dict:
             result["windDir"] = dirs[int((wind_dir_deg + 22.5) / 45) % 8]
             result["windScale"] = wind_speed_to_scale(cw.get("windspeed", 0) / 3.6)  # km/h → m/s
 
-        # 湿度（当前小时）
+        # hourly 数据：找当前小时在 hourly.time 列表中的索引
         hourly = data.get("hourly", {})
+        hourly_times = hourly.get("time", [])  # 格式: "2026-04-07T00:00"
+        from config import bj_now
+        _now_hour_str = bj_now().strftime("%Y-%m-%dT%H:00")
+        # 找当前小时索引，找不到就默认用 0
+        _h_idx = 0
+        for _i, _t in enumerate(hourly_times):
+            if str(_t).startswith(_now_hour_str):
+                _h_idx = _i
+                break
+
+        # 湿度（当前小时）
         humidity_vals = hourly.get("relativehumidity_2m", [])
-        if humidity_vals:
+        if humidity_vals and _h_idx < len(humidity_vals) and humidity_vals[_h_idx] is not None:
+            result["humidity"] = str(int(humidity_vals[_h_idx]))
+        elif humidity_vals and humidity_vals[0] is not None:
             result["humidity"] = str(int(humidity_vals[0]))
 
         # 体感温度（当前小时）
+        # 优先级：hourly[当前小时] > daily[0].apparent_temperature_max > hourly[0]
         apparent_vals = hourly.get("apparent_temperature", [])
-        if apparent_vals and apparent_vals[0] is not None:
+        _got = False
+        if apparent_vals and _h_idx < len(apparent_vals) and apparent_vals[_h_idx] is not None:
+            result["feels_like"] = f"{int(apparent_vals[_h_idx])}°"
+            _got = True
+        elif apparent_vals and apparent_vals[0] is not None:
             result["feels_like"] = f"{int(apparent_vals[0])}°"
-
-        # 降水概率（当前小时百分比）
-        precip_prob_vals = hourly.get("precipitation_probability", [])
-        if precip_prob_vals and precip_prob_vals[0] is not None:
-            result["precip_prob"] = f"{int(precip_prob_vals[0])}%"
+            _got = True
+        # 回退：daily 的体感温度最大值（Open-Meteo 自带每日字段，无需额外请求）
+        if not _got:
+            daily_data = data.get("daily", {})
+            app_max = daily_data.get("apparent_temperature_max", [])
+            if app_max and app_max[0] is not None:
+                result["feels_like"] = f"{int(app_max[0])}°"
 
         # 每日预报
         daily = data.get("daily", {})
@@ -259,9 +279,11 @@ def get_weather_openmeteo(lat: float, lon: float) -> dict:
             uv_desc = "极强" if uv >= 11 else "很强" if uv >= 8 else "强" if uv >= 5 else "中等" if uv >= 3 else "弱"
             result["uv"] = f"{uv_desc}（UV={uv}）"
 
-        # 降水概率（今日白天，降水概率 > 50% 提示带伞）
+        # 降水概率：用今日全天最大降水概率（daily[0].precipitation_probability_max）
+        # 比 hourly 当前小时更有参考价值（代表今天最高风险）
         if precip_probs and precip_probs[0] is not None:
             pp = int(precip_probs[0])
+            result["precip_prob"] = f"{pp}%"  # 无论多少都显示
             if pp >= 50:
                 result["dress"] = f"降水{pp}%"
 
@@ -298,6 +320,8 @@ def get_weather_caiyun(lat: float, lon: float) -> dict:
         "uv": "",
 
         "dress": "",
+
+        "precip_prob": "",
 
         "daily": {},
 
@@ -394,6 +418,13 @@ def get_weather_caiyun(lat: float, lon: float) -> dict:
             result["uv"] = f"{uv_desc}（{uv_text}）" if uv_text else uv_desc
 
             result["dress"] = dress_data.get("desc", "")
+
+            # 降水概率（彩云 daily.precipitation[0].probability，0~100 的整数）
+            precip_list = daily.get("precipitation", [])
+            if precip_list and isinstance(precip_list[0], dict):
+                prob = precip_list[0].get("probability")
+                if prob is not None:
+                    result["precip_prob"] = f"{int(float(prob))}%"
 
             
 
@@ -545,6 +576,7 @@ def get_weather_qweather_fallback(location_id: str) -> dict:
         "humidity": "--",
         "windDir": "--",
         "windScale": "--",
+        "feels_like": "",
         "daily": {},
     }
 
@@ -561,9 +593,12 @@ def get_weather_qweather_fallback(location_id: str) -> dict:
             result["temp"] = now.get("temp", "--")
             result["text"] = now.get("text", "--")
             result["humidity"] = now.get("humidity", "--")
-            # 和风 /now 接口有 windDir/windScale，直接提取
+            # 和风 /now 接口有 windDir/windScale/feelsLike，直接提取
             result["windDir"] = now.get("windDir", "--")
             result["windScale"] = now.get("windScale", "--")
+            fl = now.get("feelsLike", "")
+            if fl and fl != "--":
+                result["feels_like"] = f"{fl}°"
 
         if daily_data.get("code") == "200" and daily_data.get("daily"):
             # 转换和风预报格式为彩云格式，供 is_weather_complete 和合并使用
@@ -859,7 +894,7 @@ def _merge_weather(caiyun: dict, qweather: dict, juhe: dict, hefeng_sup: dict, o
         'uv': best(primary.get('uv'), openmeteo.get('uv', ''), qweather.get('uv'), hefeng_sup.get('uv', '')),
         'dress': best(primary.get('dress'), openmeteo.get('dress', ''), qweather.get('dress'), hefeng_sup.get('dress', '')),
         'feels_like': best(primary.get('feels_like'), openmeteo.get('feels_like', ''), qweather.get('feels_like', '')),
-        'precip_prob': best(primary.get('precip_prob'), openmeteo.get('precip_prob', ''), qweather.get('precip_prob', '')),
+        'precip_prob': best(primary.get('precip_prob'), openmeteo.get('precip_prob', ''), caiyun.get('precip_prob', ''), qweather.get('precip_prob', '')),
         'daily': merged_daily,
         'temp_source': primary_name,
     }
