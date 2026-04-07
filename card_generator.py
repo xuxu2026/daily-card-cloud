@@ -834,8 +834,42 @@ def get_decoration(decor_type, style):
 
 
 # ============================================================
-# Google Fonts
+# 字体配置：优先使用本地预装字体（Windows 云端环境已有）
 # ============================================================
+import os as _os
+
+def _get_local_font_face():
+    """
+    生成 @font-face 规则，直接引用 Windows 预装的中文字体。
+    这样不需要网络加载字体，确保渲染一致性。
+    """
+    font_dir = "C:/Windows/Fonts"
+    faces = []
+    font_map = {
+        # 静态字体（精确 weight）
+        "Noto Sans SC":       ("Noto Sans SC (TrueType).otf", "Noto Sans SC", "300 400"),
+        "Noto Sans SC Bold":  ("Noto Sans SC Bold (TrueType).otf", "Noto Sans SC", "600 700"),
+        # 变量字体（支持全 range）
+        "NotoSansSC-VF":      ("NotoSansSC-VF.ttf", "Noto Sans SC", "100 900"),
+        "NotoSerifSC-VF":     ("NotoSerifSC-VF.ttf", "Noto Serif SC", "100 900"),
+        "STKaiti":            ("STKAITI.TTF", "STKaiti", "400"),
+        "STSong":             ("STSONG.TTF", "STSong", "400"),
+    }
+    for family, (filename, display, weight_range) in font_map.items():
+        path = _os.path.join(font_dir, filename)
+        if _os.path.exists(path):
+            # file:/// URL 格式
+            file_url = "file:///" + path.replace("\\", "/")
+            faces.append(f"""
+@font-face {{
+  font-family: '{family}';
+  src: url('{file_url}');
+  font-weight: {weight_range};
+  font-style: normal;
+}}""")
+    return "\n".join(faces)
+
+# Google Fonts 备选（仅用于无法使用本地字体时的降级）
 def get_font_import(style):
     base = "Noto+Serif+SC:wght@300;400;600;700&family=Noto+Sans+SC:wght@300;400&family=Ma+Shan+Zheng"
     if style["name_en"] in ("Tuscany", "Parisian", "Macaron", "Creamy", "HongKong"):
@@ -1380,7 +1414,11 @@ def build_html(data, style=None):
 <title>Daily Card</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="{get_font_import(style)}" rel="stylesheet">
-<style>{generate_css(style)}</style>
+<style>
+/* 本地预装字体（Windows 云端环境，file:// URL 下直接使用） */
+{_get_local_font_face()}
+{generate_css(style)}
+</style>
 </head>
 <body>
   {bg_image_html}
@@ -1451,10 +1489,10 @@ def generate_image(data, output_path, style=None):
         from playwright.sync_api import sync_playwright
         with sync_playwright() as p:
             browser = p.chromium.launch(channel="msedge", headless=True)
-            page = browser.new_page(viewport={"width": 750, "height": 1100})
-            page.goto(file_url, wait_until="networkidle", timeout=25000)
-            page.wait_for_timeout(1500)
-            page.screenshot(path=output_path, type="png")
+            page = browser.new_page(viewport={"width": 750, "height": 1100}, device_scale_factor=3)
+            page.goto(file_url, wait_until="networkidle", timeout=30000)
+            page.wait_for_timeout(2000)
+            page.screenshot(path=output_path, type="png", full_page=False)
             browser.close()
         print(f"[✓] {output_path}")
         return True
