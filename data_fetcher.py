@@ -233,11 +233,21 @@ def get_weather_openmeteo(lat: float, lon: float) -> dict:
             result["humidity"] = str(int(humidity_vals[0]))
 
         # 体感温度（当前小时）
+        # 优先级：hourly[当前小时] > daily[0].apparent_temperature_max > hourly[0]
         apparent_vals = hourly.get("apparent_temperature", [])
+        _got = False
         if apparent_vals and _h_idx < len(apparent_vals) and apparent_vals[_h_idx] is not None:
             result["feels_like"] = f"{int(apparent_vals[_h_idx])}°"
+            _got = True
         elif apparent_vals and apparent_vals[0] is not None:
             result["feels_like"] = f"{int(apparent_vals[0])}°"
+            _got = True
+        # 回退：daily 的体感温度最大值（Open-Meteo 自带每日字段，无需额外请求）
+        if not _got:
+            daily_data = data.get("daily", {})
+            app_max = daily_data.get("apparent_temperature_max", [])
+            if app_max and app_max[0] is not None:
+                result["feels_like"] = f"{int(app_max[0])}°"
 
         # 每日预报
         daily = data.get("daily", {})
