@@ -83,9 +83,9 @@ def make_style(name, name_en, bg_grad, primary, secondary, accent,
 # ============================================================
 # 字体常量
 # ============================================================
-FONT_DISPLAY = "'Ma Shan Zheng', 'ZCOOL XiaoWei', cursive"
-FONT_SERIF   = "'Noto Serif SC', 'Songti SC', 'FangSong', serif"
-FONT_SANS    = "'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif"
+FONT_DISPLAY = "'STKaiti', cursive"
+FONT_SERIF   = "'Noto Serif SC', 'NotoSerifSC-VF', 'STSong', serif"
+FONT_SANS    = "'Noto Sans SC', 'NotoSansSC-VF', 'Microsoft YaHei', sans-serif"
 
 
 # ============================================================
@@ -1427,147 +1427,96 @@ HOLIDAY_STYLES = [
 ALL_STYLES = HOLIDAY_STYLES + REGULAR_STYLES
 
 
-def get_style_for_date(date=None):
-    """根据日期返回对应主题（节日期间返回节日主题）"""
-    if date is None:
-        date = bj_date()
-    if is_holiday(date):
-        styles = get_holiday_styles(date)
-        if styles:
-            return styles[0]
-        return HOLIDAY_STYLES[0]
-    day_of_year = (date - datetime.date(date.year, 1, 1)).days + 1
-    idx = (day_of_year - 1) % len(REGULAR_STYLES)
-    return REGULAR_STYLES[idx]
-
-
-def get_holiday_styles(date=None):
-    """获取某日期对应的节日主题列表（1-2个），用于节日期间同时推送多款供选择"""
-    if date is None:
-        date = bj_date()
-    if not is_holiday(date):
-        return []
-    
-    m, d = date.month, date.day
-    
-    # 定义节日主题对
-    holiday_pairs = {
-        # 春节
-        (1, 28): [H.H01, H.H02],
-        (1, 29): [H.H01, H.H02],
-        # 元宵
-        (2, 12): [H.H03, H.H04],
-        (2, 13): [H.H03, H.H04],
-        # 情人节
-        (2, 14): [H.H25, H.H26],
-        # 妇女节
-        (3, 8): [H.H27, H.H27B],
-        # 清明
-        (4, 5): [H.H05, H.H06],
-        (4, 6): [H.H05, H.H06],
-        # 劳动节
-        (5, 1): [H.H28, H.H28B],
-        # 端午
-        (5, 31): [H.H07, H.H08],
-        # 儿童节
-        (6, 1): [H.H29, H.H30],
-        # 七夕
-        (8, 25): [H.H09, H.H10],
-        # 教师节
-        (9, 10): [H.H31, H.H32],
-        # 中秋
-        (9, 28): [H.H11, H.H12],
-        # 国庆
-        (10, 1): [H.H13, H.H14],
-        # 重阳
-        (10, 11): [H.H15, H.H16],
-        # 万圣
-        (10, 31): [H.H17, H.H18],
-        # 感恩节
-        (11, 24): [H.H19, H.H20],
-        # 圣诞节
-        (12, 25): [H.H21, H.H22],
-        # 元旦
-        (12, 31): [H.H23, H.H24],
-    }
-    
-    return holiday_pairs.get((m, d), [HOLIDAY_STYLES[0]])
-
-
 # ──────────────────────────────────────────────────────────────────
-# 全局节假日映射：每个日期 → (style_name, 节假日名)
+# 全局节假日映射：每个日期 → ([候选 style name_en, ...], 节假日名)
+# 同一天有多个候选时，运行时以日期 ordinal 为 seed 随机选一款（确定性随机，同天结果一致）
+# ──────────────────────────────────────────────────────────────────
 # 2026年节假日方案：
 #   春节 1/28-2/3（7天），清明 4/4-4/6（3天），劳动节 5/1-5/5（5天）
 #   端午 6/27-6/29（3天），中秋+国庆 10/1-10/8（8天）
 # ──────────────────────────────────────────────────────────────────
 _HOLIDAY_MAP = {
-    # 元旦
-    (1, 1): ('NewYearDay', '元旦'),    (1, 2): ('NewYearDay02', '元旦'),
-    # 春节（7天）
-    (1, 28): ('SpringFestival01', '春节'), (1, 29): ('SpringFestival02', '春节'),
-    (1, 30): ('SpringFestival03', '春节'), (1, 31): ('SpringFestival04', '春节'),
-    (2, 1):  ('SpringFestival05', '春节'), (2, 2):  ('SpringFestival06', '春节'),
-    (2, 3):  ('SpringFestival07', '春节'),
-    # 元宵
-    (2, 12): ('Lantern01', '元宵节'),  (2, 13): ('Lantern02', '元宵节'),
-    # 情人节
-    (2, 14): ('Valentine01', '情人节'),
-    # 妇女节
-    (3, 8):  ('WomensDay01', '妇女节'),  (3, 9):  ('WomensDay03', '妇女节'),
-    # 清明（3天）
-    (4, 4): ('Qingming01', '清明'),    (4, 5): ('Qingming02', '清明'),
-    (4, 6): ('Qingming03', '清明'),
-    # 劳动节（5天）
-    (5, 1):  ('LaborDay01', '劳动节'),  (5, 2):  ('LaborDay02', '劳动节'),
-    (5, 3):  ('LaborDay03', '劳动节'),  (5, 4):  ('LaborDay04', '劳动节'),
-    (5, 5):  ('LaborDay05', '劳动节'),
-    # 儿童节
-    (6, 1):  ('ChildrensDay', '儿童节'),
-    # 端午（3天）
-    (6, 27): ('DragonBoat01', '端午'), (6, 28): ('DragonBoat02', '端午'),
-    (6, 29): ('DragonBoat03', '端午'),
-    # 七夕（2天）
-    (8, 25): ('Qixi01', '七夕节'),
-    # 教师节
-    (9, 10): ('TeachersDay01', '教师节'),
-    # 中秋+国庆（9/28中秋，10/1-10/8放假，10/10国庆收官）
-    (9, 28): ('MidAutumn01', '中秋'),
-    (10, 1): ('NationalDay01', '国庆'), (10, 2): ('NationalDay02', '国庆'),
-    (10, 3): ('NationalDay03', '国庆'), (10, 4): ('NationalDay04', '国庆'),
-    (10, 5): ('NationalDay05', '国庆'), (10, 6): ('NationalDay06', '国庆'),
-    (10, 7): ('NationalDay07', '国庆'), (10, 8): ('NationalDay08', '国庆'),
-    (10, 10): ('NationalDay08', '国庆'),
-    # 重阳
-    (10, 11): ('DoubleNinth01', '重阳节'),
-    # 万圣
-    (10, 31): ('Halloween01', '万圣节'),
-    # 感恩
-    (11, 24): ('Thanksgiving01', '感恩节'),
-    # 圣诞
-    (12, 25): ('Christmas01', '圣诞节'),
+    # 元旦（2天，各1款）
+    (1, 1): (['NewYearDay', 'NewYearEve'],    '元旦'),
+    (1, 2): (['NewYearDay02'],                '元旦'),
+    # 春节（7天，每天固定1款，各自主题独立）
+    (1, 28): (['SpringFestival01', 'SpringFestival02'], '春节'),
+    (1, 29): (['SpringFestival02', 'SpringFestival01'], '春节'),
+    (1, 30): (['SpringFestival03'], '春节'),
+    (1, 31): (['SpringFestival04'], '春节'),
+    (2, 1):  (['SpringFestival05'], '春节'),
+    (2, 2):  (['SpringFestival06'], '春节'),
+    (2, 3):  (['SpringFestival07'], '春节'),
     # 除夕
-    (2, 16): ('NewYearEve02', '除夕'),
+    (2, 16): (['NewYearEve02', 'NewYearEve'], '除夕'),
+    # 元宵（2天，各2款随机）
+    (2, 12): (['Lantern01', 'Lantern02'], '元宵节'),
+    (2, 13): (['Lantern02', 'Lantern01'], '元宵节'),
+    # 情人节（1天，2款随机）
+    (2, 14): (['Valentine01', 'Valentine02'], '情人节'),
+    # 妇女节（2天，各2款随机）
+    (3, 8):  (['WomensDay01', 'WomensDay02'], '妇女节'),
+    (3, 9):  (['WomensDay03', 'WomensDay01'], '妇女节'),
+    # 清明（3天，每天1-2款）
+    (4, 4): (['Qingming01', 'Qingming02'], '清明'),
+    (4, 5): (['Qingming02', 'Qingming01'], '清明'),
+    (4, 6): (['Qingming03', 'Qingming02'], '清明'),
+    # 劳动节（5天）
+    (5, 1):  (['LaborDay01', 'LaborDay02'], '劳动节'),
+    (5, 2):  (['LaborDay02', 'LaborDay01'], '劳动节'),
+    (5, 3):  (['LaborDay03'], '劳动节'),
+    (5, 4):  (['LaborDay04'], '劳动节'),
+    (5, 5):  (['LaborDay05'], '劳动节'),
+    # 儿童节（1天，2款随机）
+    (6, 1):  (['ChildrensDay', 'ChildrensDay02'], '儿童节'),
+    # 端午（3天）
+    (6, 27): (['DragonBoat01', 'DragonBoat02'], '端午'),
+    (6, 28): (['DragonBoat02', 'DragonBoat01'], '端午'),
+    (6, 29): (['DragonBoat03', 'DragonBoat02'], '端午'),
+    # 七夕（1天，2款随机）
+    (8, 25): (['Qixi01', 'Qixi02'], '七夕节'),
+    # 教师节（1天，2款随机）
+    (9, 10): (['TeachersDay01', 'TeachersDay02'], '教师节'),
+    # 中秋（1天，2款随机）
+    (9, 28): (['MidAutumn01', 'MidAutumn02'], '中秋'),
+    # 国庆（8天，每天1-2款）
+    (10, 1):  (['NationalDay01', 'NationalDay02'], '国庆'),
+    (10, 2):  (['NationalDay02', 'NationalDay01'], '国庆'),
+    (10, 3):  (['NationalDay03'], '国庆'),
+    (10, 4):  (['NationalDay04'], '国庆'),
+    (10, 5):  (['NationalDay05'], '国庆'),
+    (10, 6):  (['NationalDay06'], '国庆'),
+    (10, 7):  (['NationalDay07'], '国庆'),
+    (10, 8):  (['NationalDay08'], '国庆'),
+    # 重阳（1天，2款随机）
+    (10, 11): (['DoubleNinth01', 'DoubleNinth02'], '重阳节'),
+    # 万圣（1天，2款随机）
+    (10, 31): (['Halloween01', 'Halloween02'], '万圣节'),
+    # 感恩节（修正：2026年11月26日，2款随机）
+    (11, 26): (['Thanksgiving01', 'Thanksgiving02'], '感恩节'),
+    # 圣诞节（1天，2款随机）
+    (12, 25): (['Christmas01', 'Christmas02'], '圣诞节'),
     # 跨年夜
-    (12, 31): ('NewYearEve', '跨年夜'),
+    (12, 31): (['NewYearEve', 'NewYearEve02'], '跨年夜'),
 }
 
 
 def get_style_by_name(name):
     """根据 style name_en 查找 H 风格对象"""
-    try:
-        from styles_72 import H
-        return getattr(H, name)
-    except (ImportError, AttributeError):
-        # Fallback: scan HOLIDAY_STYLES
-        from styles_72 import HOLIDAY_STYLES
-        for s in HOLIDAY_STYLES:
-            if s.get('name_en') == name:
-                return s
-        return HOLIDAY_STYLES[0]
+    # 先尝试直接 getattr(H, name)
+    for attr in dir(H):
+        obj = getattr(H, attr)
+        if isinstance(obj, dict) and obj.get('name_en') == name:
+            return obj
+    # Fallback: scan HOLIDAY_STYLES
+    for s in HOLIDAY_STYLES:
+        if s.get('name_en') == name:
+            return s
+    return HOLIDAY_STYLES[0]
 
 
 def is_holiday(date=None):
-    """判断是否为节假日（含调休上班日）"""
+    """判断是否为节假日"""
     if date is None:
         date = bj_date()
     return (date.month, date.day) in _HOLIDAY_MAP
@@ -1581,29 +1530,42 @@ def get_holiday_name(date=None):
     return info[1] if info else ''
 
 
+def _pick_style_name(date):
+    """从候选列表中随机选一个 style name_en（以日期 ordinal 为 seed，确保同天结果一致）"""
+    info = _HOLIDAY_MAP.get((date.month, date.day))
+    if not info:
+        return ''
+    candidates = info[0]  # list of name_en strings
+    if len(candidates) == 1:
+        return candidates[0]
+    rng = random.Random(date.toordinal())
+    return rng.choice(candidates)
+
+
 def get_holiday_style_name(date=None):
-    """获取节假日对应的 style name_en"""
+    """获取节假日当天随机选定的 style name_en"""
     if date is None:
         date = bj_date()
-    info = _HOLIDAY_MAP.get((date.month, date.day))
-    return info[0] if info else ''
+    return _pick_style_name(date)
 
 
 def get_style_for_date(date=None):
-    """根据日期返回主题：节假日→节日风格，工作日→轮换常规风格"""
+    """根据日期返回主题：节假日→随机节日风格，工作日→轮换常规风格"""
     if date is None:
         date = bj_date()
     if is_holiday(date):
-        return get_style_by_name(get_holiday_style_name(date))
+        name = _pick_style_name(date)
+        return get_style_by_name(name)
     day_of_year = (date - datetime.date(date.year, 1, 1)).days + 1
     idx = (day_of_year - 1) % len(REGULAR_STYLES)
     return REGULAR_STYLES[idx]
 
 
 def get_holiday_styles(date=None):
-    """返回该日期对应的节日风格列表（节假日=1个；非节日=空列表）"""
+    """返回该日期对应的节日风格列表（节假日=1个随机选定；非节日=空列表）"""
     if date is None:
         date = bj_date()
     if not is_holiday(date):
         return []
-    return [get_style_by_name(get_holiday_style_name(date))]
+    name = _pick_style_name(date)
+    return [get_style_by_name(name)]
