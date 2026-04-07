@@ -30,9 +30,8 @@ def _log(msg: str):
 
 def _compress_image_for_wecom(image_path: str) -> bytes:
     """
-    读取图片，如超过 2MB 则自动缩放压缩至 2MB 以内。
-    优先用 PNG 优化压缩（compress_level=9），如仍超限则按比例缩小尺寸。
-    返回最终的图片 bytes。
+    读取图片，在 2MB 限制内输出最清晰的图片。
+    策略：优先用 JPEG 高质量（95），如超限则逐步降质量，最后才缩放尺寸。
     """
     from PIL import Image
 
@@ -44,24 +43,36 @@ def _compress_image_for_wecom(image_path: str) -> bytes:
 
     img = Image.open(image_path)
     w, h = img.size
-    _log(f"[i] 原图 {w}x{h}px {len(raw)/1024:.0f}KB，超过2MB，开始压缩...")
+    _log(f"[i] 原图 {w}x{h}px {len(raw)/1024:.0f}KB，超过2MB，开始优化...")
 
-    # 先尝试 PNG 最高压缩
-    buf = io.BytesIO()
-    img.save(buf, format="PNG", optimize=True, compress_level=9)
-    data = buf.getvalue()
-    if len(data) <= WECOM_IMAGE_MAX_BYTES:
-        _log(f"[i] PNG优化压缩后 {len(data)/1024:.0f}KB，OK")
-        return data
+    # 如果原图是 RGBA，先转 RGB（JPEG 不支持透明）
+    if img.mode == "RGBA":
+        # 把透明背景合成到白色上
+        bg = Image.new("RGB", img.size, (255, 255, 255))
+        bg.paste(img, mask=img.split()[3])
+        img = bg
 
-    # 仍超限：按比例缩小到 2x（1500x2200）
-    scale = 0.667  # 3x → 2x
-    new_w, new_h = int(w * scale), int(h * scale)
-    img2 = img.resize((new_w, new_h), Image.LANCZOS)
+    # JPEG 质量迭代：从95往下找最优值
+    for quality in [95, 90, 85, 80, 75, 70]:
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=quality, optimize=True)
+        data = buf.getvalue()
+        size_kb = len(data) / 1024
+        if len(data) <= WECOM_IMAGE_MAX_BYTES:
+            _log(f"[i] JPEG q={quality} {w}x{h}px {size_kb:.0f}KB，OK")
+            return data
+
+    # JPEG 质量70仍超限 → 缩放尺寸
+    # 目标：缩到约 2x 像素数（1500x2200），仍用 JPEG q=85
+    target_area = int(w * h * 0.44)  # 约 1/2.25 倍
+    ratio = w / h
+    target_h = int((target_area / ratio) ** 0.5)
+    target_w = int(target_h * ratio)
+    img2 = img.resize((target_w, target_h), Image.LANCZOS)
     buf2 = io.BytesIO()
-    img2.save(buf2, format="PNG", optimize=True, compress_level=9)
+    img2.save(buf2, format="JPEG", quality=85, optimize=True)
     data2 = buf2.getvalue()
-    _log(f"[i] 缩放至 {new_w}x{new_h}px 后 {len(data2)/1024:.0f}KB")
+    _log(f"[i] 缩放至 {target_w}x{target_h}px + JPEG q=85 → {len(data2)/1024:.0f}KB")
     return data2
 
 
