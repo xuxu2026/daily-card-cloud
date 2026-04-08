@@ -9,6 +9,7 @@ import traceback
 import datetime
 import hashlib
 import os
+import time
 from pathlib import Path
 
 # 确保脚本所在目录在 Python 路径中
@@ -18,7 +19,7 @@ sys.path.insert(0, str(script_dir))
 from data_fetcher import fetch_all_data
 from card_generator import generate_image, generate_images, get_holiday_styles, get_style_for_date
 from wecom_pusher import send_image_to_wecom, send_text_to_wecom
-from config import OUTPUT_IMAGE_PATH
+from config import OUTPUT_IMAGE_PATH, bj_date
 
 # 上次推送图片的MD5记录（用于去重）
 LAST_SENT_MD5_FILE = Path(__file__).parent / ".last_sent_md5"
@@ -52,25 +53,42 @@ LOCK_FILE = Path(__file__).parent / ".running.lock"
 
 
 def acquire_lock():
-    """获取进程锁，防止脚本并发执行"""
+    """获取进程锁，防止脚本并发执行（跨平台）"""
+    import errno
     lock_file = open(LOCK_FILE, "w")
     try:
-        import msvcrt
-        msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
-        lock_file.write(str(os.getpid()))
-        lock_file.flush()
-        return lock_file
-    except IOError:
-        print("[✗] 脚本已在运行中，退出")
+        if os.name == "nt":
+            # Windows：使用 msvcrt 文件锁
+            import msvcrt
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+            lock_file.write(str(os.getpid()))
+            lock_file.flush()
+            return lock_file
+        else:
+            # Linux/macOS：使用 fcntl
+            import fcntl
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            lock_file.write(str(os.getpid()))
+            lock_file.flush()
+            return lock_file
+    except (IOError, OSError) as e:
+        if e.errno in (errno.EWOULDBLOCK, errno.EAGAIN):
+            print("[*] 脚本已在运行中，退出")
+        else:
+            print(f"[*] 获取锁失败: {e}")
         lock_file.close()
         sys.exit(0)
 
 
 def release_lock(lock_file):
-    """释放进程锁"""
+    """释放进程锁（跨平台）"""
     try:
-        import msvcrt
-        msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+        if os.name == "nt":
+            import msvcrt
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
         lock_file.close()
         LOCK_FILE.unlink(missing_ok=True)
     except Exception:
@@ -84,13 +102,33 @@ def main():
         print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 开始执行日签推送任务")
         print('='*50)
 
-        # Step 1: 获取数据
+        # Step 1: 获取数据（带重试，确保天气 API 返回有效数据）
         print("\n[1/3] 正在获取天气、限号等数据...")
-        data = fetch_all_data()
-        print(f"  ✓ 数据获取完成 - {data['date']} {data['weekday']}")
+        MAX_RETRIES = 3
+        RETRY_INTERVAL = 60  # 秒
+        data = None
+        for attempt in range(1, MAX_RETRIES + 1):
+            data = fetch_all_data()
+            # 检查天气数据是否有效（排除 "--" fallback）
+            weather_invalid = []
+            for w in data.get('weather_list', []):
+                temp = w.get('now', {}).get('temp', '--')
+                source = w.get('temp_source', '未知')
+                if temp == '--' or temp is None:
+                    weather_invalid.append(f"{w.get('city', '?')}(来源:{source})")
+            if not weather_invalid:
+                print(f"  ✓ 数据获取完成 - {data['date']} {data['weekday']}")
+                break
+            print(f"  ⚠ 第 {attempt} 次：{', '.join(weather_invalid)} 温度为 '--'，{'重试...' if attempt < MAX_RETRIES else '放弃'}")
+            if attempt < MAX_RETRIES:
+                print(f"    等待 {RETRY_INTERVAL} 秒后重试...")
+                time.sleep(RETRY_INTERVAL)
+        else:
+            # 重试耗尽，发送警告但不放弃（数据可能部分有效）
+            print(f"  ⚠ 天气数据不完整，但仍继续生成（使用 fallback 数据）")
 
         # Step 2: 生成图片
-        today = datetime.date.today()
+        today = bj_date()
         holiday_styles = get_holiday_styles(today)
         
         if holiday_styles and len(holiday_styles) > 1:

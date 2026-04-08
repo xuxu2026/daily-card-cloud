@@ -13,6 +13,7 @@
 import os
 import datetime
 import random
+from config import bj_date
 
 
 # ============================================================
@@ -82,9 +83,9 @@ def make_style(name, name_en, bg_grad, primary, secondary, accent,
 # ============================================================
 # 字体常量
 # ============================================================
-FONT_DISPLAY = "'Ma Shan Zheng', 'ZCOOL XiaoWei', cursive"
-FONT_SERIF   = "'Noto Serif SC', 'Songti SC', 'FangSong', serif"
-FONT_SANS    = "'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif"
+FONT_DISPLAY = "'STKaiti', cursive"
+FONT_SERIF   = "'Noto Serif SC', 'NotoSerifSC-VF', 'STSong', serif"
+FONT_SANS    = "'Noto Sans SC', 'NotoSansSC-VF', 'Microsoft YaHei', sans-serif"
 
 
 # ============================================================
@@ -1022,7 +1023,7 @@ class H:
         divider="📚 · 📖 · 📚",
         greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
         greeting_size="32px", tag_bg="rgba(143,76,32,0.18)", tag_color="#7B3A10",
-        card_radius="16px", decor="chrysanthemum", greeting="教师节快乐",
+        card_radius="16px", decor="lines", greeting="教师节快乐",
         footer="师恩如山，桃李芬芳 📚",
     )
 
@@ -1035,10 +1036,338 @@ class H:
         divider="🌻 · 🌻 · 🌻",
         greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
         greeting_size="32px", tag_bg="rgba(176,128,24,0.18)", tag_color="#A06808",
-        card_radius="18px", decor="sunflower", greeting="桃李天下",
+        card_radius="18px", decor="brushstroke", greeting="桃李天下",
         footer="感谢恩师，一路有你 🌻",
     )
 
+
+
+    # ── 春节第三天（正月初三）────────────────────────────────
+    H33 = make_style(
+        name="正月初三", name_en="SpringFestival03",
+        bg_grad=make_bg(["#FFF0E8","#FFD8C8","#FFC0A8","#FFA888","#FF9068"]),
+        primary="#B03010", secondary="#C84020", accent="#D85830",
+        text="#6B1808", text_light="rgba(107,24,8,0.62)",
+        card_bg="rgba(255,248,240,0.72)", card_border="rgba(216,88,48,0.48)",
+        divider="🧧 · 🏮 · 🧧",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="32px", tag_bg="rgba(184,48,16,0.18)", tag_color="#B03010",
+        card_radius="16px", decor="coin", greeting="初三开年",
+        footer="迎春纳福，年味正浓 🧧",
+    )
+
+    # ── 春节第四天（正月初四）────────────────────────────────
+    H34 = make_style(
+        name="正月初四", name_en="SpringFestival04",
+        bg_grad=make_bg(["#FFF8F0","#FFECD8","#FFE0C0","#FFD4A8","#FFC890"]),
+        primary="#9B5010", secondary="#B06818", accent="#C88020",
+        text="#6B3C08", text_light="rgba(107,60,8,0.62)",
+        card_bg="rgba(255,252,244,0.72)", card_border="rgba(200,128,32,0.42)",
+        divider="🏮 · ✨ · 🏮",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="32px", tag_bg="rgba(160,88,16,0.18)", tag_color="#9B5010",
+        card_radius="16px", decor="sparkle", greeting="灶神归位",
+        footer="灶王保佑，福气临门 🏮",
+    )
+
+    # ── 春节第五天（正月初五）────────────────────────────────
+    H35 = make_style(
+        name="正月初五", name_en="SpringFestival05",
+        bg_grad=make_bg(["#FFF5F0","#FFE8D8","#FFD8C0","#FFC8A8","#FFB890"]),
+        primary="#C04010", secondary="#D05820", accent="#E07030",
+        text="#782808", text_light="rgba(120,40,8,0.62)",
+        card_bg="rgba(255,252,248,0.72)", card_border="rgba(224,112,48,0.44)",
+        divider="🧧 · 🧧 · 🧧",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="32px", tag_bg="rgba(192,64,16,0.18)", tag_color="#C04010",
+        card_radius="16px", decor="coin", greeting="迎财神",
+        footer="财源广进，金玉满堂 🧧",
+    )
+
+    # ── 春节第六天（正月初六）────────────────────────────────
+    H36 = make_style(
+        name="正月初六", name_en="SpringFestival06",
+        bg_grad=make_bg(["#F8F0FF","#E8D8FF","#D8C0FF","#C8A8FF","#B890FF"]),
+        primary="#7030B8", secondary="#8848C8", accent="#A060D8",
+        text="#3C1068", text_light="rgba(60,16,104,0.62)",
+        card_bg="rgba(255,252,255,0.72)", card_border="rgba(160,96,216,0.50)",
+        divider="✨ · 🏮 · ✨",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="32px", tag_bg="rgba(112,72,184,0.18)", tag_color="#7030B8",
+        card_radius="16px", decor="sparkle", greeting="六六大顺",
+        footer="顺风顺水，好运连连 ✨",
+    )
+
+    # ── 春节第七天（正月初七）────────────────────────────────
+    H37 = make_style(
+        name="正月初七", name_en="SpringFestival07",
+        bg_grad=make_bg(["#F0F8F8","#D8F0F0","#C0E8E8","#A8E0E0","#90D8D8"]),
+        primary="#206868", secondary="#387878", accent="#508888",
+        text="#0E3838", text_light="rgba(14,56,56,0.62)",
+        card_bg="rgba(255,255,255,0.68)", card_border="rgba(80,136,136,0.48)",
+        divider="🌱 · 🌿 · 🌱",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="32px", tag_bg="rgba(56,120,120,0.18)", tag_color="#206868",
+        card_radius="16px", decor="grass", greeting="人日快乐",
+        footer="人日登高，福寿安康 🌱",
+    )
+
+    # ── 元宵节（共用 H03 H04）──────────────────────────────
+    # H03="元宵灯彩"，H04="元宵星夜"（已在上方定义）
+
+    # ── 情人节（共用 H25 H26）─────────────────────────────
+    # H25="情人玫红"，H26="情人粉紫"（已在上方定义）
+
+    # ── 清明节第三天────────────────────────────────────────
+    H38 = make_style(
+        name="清明踏青", name_en="Qingming03",
+        bg_grad=make_bg(["#F4F8F0","#E0F0D8","#CCE8C0","#B8E0A8","#A4D890"]),
+        primary="#3A6830", secondary="#487840", accent="#588850",
+        text="#1E3C18", text_light="rgba(30,60,24,0.62)",
+        card_bg="rgba(255,255,248,0.72)", card_border="rgba(88,136,80,0.48)",
+        divider="🌸 · 🌿 · 🌸",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="30px", tag_bg="rgba(72,120,64,0.18)", tag_color="#3A6830",
+        card_radius="16px", decor="maple", greeting="清明踏青",
+        footer="春光明媚，诗意盎然 🌸",
+    )
+
+    # ── 端午节第三天────────────────────────────────────────
+    H39 = make_style(
+        name="端午龙舟", name_en="DragonBoat03",
+        bg_grad=make_bg(["#EEF4F8","#D8E8F0","#C2DCE8","#ACD0E0","#96C4D8"]),
+        primary="#2A5070", secondary="#386080", accent="#467090",
+        text="#0E2840", text_light="rgba(14,40,64,0.62)",
+        card_bg="rgba(255,255,255,0.68)", card_border="rgba(70,112,144,0.48)",
+        divider="🐉 · 🫔 · 🐉",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="32px", tag_bg="rgba(56,96,128,0.18)", tag_color="#2A5070",
+        card_radius="14px", decor="waves", greeting="龙舟竞渡",
+        footer="百舸争流，端午安康 🐉",
+    )
+
+    # ── 劳动节第三天────────────────────────────────────────
+    H40 = make_style(
+        name="劳动欢歌", name_en="LaborDay03",
+        bg_grad=make_bg(["#F0F8F0","#D8F0D8","#C0E8C0","#A8E0A8","#90D890"]),
+        primary="#286030", secondary="#387840", accent="#489050",
+        text="#1A3C1C", text_light="rgba(26,60,28,0.62)",
+        card_bg="rgba(255,255,255,0.70)", card_border="rgba(72,144,80,0.45)",
+        divider="⚙ · 🌾 · ⚙",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="32px", tag_bg="rgba(56,120,64,0.18)", tag_color="#286030",
+        card_radius="16px", decor="grain", greeting="劳动快乐",
+        footer="辛勤耕耘，收获满满 ⚙",
+    )
+
+    # ── 劳动节第四天────────────────────────────────────────
+    H41 = make_style(
+        name="劳动赞歌02", name_en="LaborDay04",
+        bg_grad=make_bg(["#F8F0E8","#F0E0D0","#E8D0B8","#E0C0A0","#D8B088"]),
+        primary="#7B4818", secondary="#8F5C28", accent="#A37038",
+        text="#5C3010", text_light="rgba(92,48,16,0.60)",
+        card_bg="rgba(255,252,248,0.68)", card_border="rgba(160,112,56,0.45)",
+        divider="🌾 · ⚙ · 🌾",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="32px", tag_bg="rgba(143,92,32,0.18)", tag_color="#7B4818",
+        card_radius="16px", decor="grain", greeting="匠心闪耀",
+        footer="平凡岗位，不凡坚守 🌾",
+    )
+
+    # ── 劳动节第五天────────────────────────────────────────
+    H42 = make_style(
+        name="劳动收官", name_en="LaborDay05",
+        bg_grad=make_bg(["#F0F8FF","#D8ECFF","#C0E0FF","#A8D4FF","#90C8FF"]),
+        primary="#1A50A0", secondary="#2060B8", accent="#2870D0",
+        text="#0E2C68", text_light="rgba(14,44,104,0.62)",
+        card_bg="rgba(255,255,255,0.70)", card_border="rgba(40,112,208,0.45)",
+        divider="⚙ · ✨ · ⚙",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="32px", tag_bg="rgba(32,96,176,0.18)", tag_color="#1A50A0",
+        card_radius="16px", decor="sparkle", greeting="致敬最美",
+        footer="劳动有你，精彩继续 ⚙",
+    )
+
+    # ── 儿童节（共用 H29 H30）─────────────────────────────
+    # H29="儿童彩虹"，H30="儿童彩虹02"（已在上方定义）
+
+    # ── 七夕节（共用 H09 H10）──────────────────────────────
+    # H09="七夕粉缘Qixi01"，H10="七夕星河Qixi02"（已在上方定义）
+
+    # ── 教师节（共用 H31 H32）─────────────────────────────
+    # H31="教师书香"，H32="教师向阳"（已在上方定义）
+
+    # ── 中秋节（共用 H11 H12）─────────────────────────────
+    # H11="中秋金辉"，H12="中秋玉兔"（已在上方定义）
+
+    # ── 重阳节（共用 H15 H16）─────────────────────────────
+    # H15="重阳金秋"，H16="重阳丹桂"（已在上方定义）
+
+    # ── 万圣节（共用 H17 H18）─────────────────────────────
+    # H17="万圣南瓜"，H18="万圣暗夜"（已在上方定义）
+
+    # ── 感恩节（共用 H19 H20）─────────────────────────────
+    # H19="感恩节火鸡"，H20="感恩节南瓜"（已在上方定义）
+
+    # ── 圣诞节（共用 H21 H22）─────────────────────────────
+    # H21="圣诞红装"，H22="圣诞雪夜"（已在上方定义）
+
+    # ── 跨年/元旦（共用 H23 H24）─────────────────────────
+    # H23="新年红韵"，H24="新年愿望"（已在上方定义）
+
+    # ── 国庆第三天────────────────────────────────────────
+    H45 = make_style(
+        name="国庆吉日", name_en="NationalDay03",
+        bg_grad=make_bg(["#FFF0E8","#FFDED0","#FFCCBC","#FFBAA8","#FFA894"]),
+        primary="#C03818", secondary="#D45028", accent="#E86838",
+        text="#781C08", text_light="rgba(120,28,8,0.62)",
+        card_bg="rgba(255,252,248,0.72)", card_border="rgba(224,88,48,0.44)",
+        divider="🏮 · 🇨🇳 · 🏮",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="32px", tag_bg="rgba(192,56,24,0.18)", tag_color="#C03818",
+        card_radius="16px", decor="lantern", greeting="锦绣中华",
+        footer="山河壮丽，共庆华诞 🏮",
+    )
+
+    # ── 国庆第四天────────────────────────────────────────
+    H46 = make_style(
+        name="国庆金秋", name_en="NationalDay04",
+        bg_grad=make_bg(["#F8F0D8","#F0E0B8","#E8D098","#E0C078","#D8B058"]),
+        primary="#906010", secondary="#A87818", accent="#C09020",
+        text="#5C4408", text_light="rgba(92,68,8,0.60)",
+        card_bg="rgba(255,252,236,0.72)", card_border="rgba(192,144,32,0.42)",
+        divider="🌾 · 🇨🇳 · 🌾",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="32px", tag_bg="rgba(160,96,16,0.18)", tag_color="#906010",
+        card_radius="16px", decor="grain", greeting="盛世华章",
+        footer="金秋送爽，福满人间 🌾",
+    )
+
+    # ── 国庆第五天────────────────────────────────────────
+    H47 = make_style(
+        name="国庆团圆", name_en="NationalDay05",
+        bg_grad=make_bg(["#F8F4F0","#F0E8E0","#E8DCD0","#E0D0C0","#D8C4B0"]),
+        primary="#8B6848", secondary="#A07C60", accent="#B59078",
+        text="#5C4838", text_light="rgba(92,72,56,0.60)",
+        card_bg="rgba(255,252,248,0.68)", card_border="rgba(176,144,120,0.44)",
+        divider="🏮 · 🏠 · 🏮",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="32px", tag_bg="rgba(140,100,64,0.18)", tag_color="#8B6848",
+        card_radius="16px", decor="lantern", greeting="家国同庆",
+        footer="家和万事，国泰民安 🏮",
+    )
+
+    # ── 国庆第六天────────────────────────────────────────
+    H48 = make_style(
+        name="国庆静好", name_en="NationalDay06",
+        bg_grad=make_bg(["#EEF4F0","#D8E8E0","#C2DCD0","#ACD0C0","#96C4B0"]),
+        primary="#386858", secondary="#487868", accent="#588878",
+        text="#1E3830", text_light="rgba(30,56,48,0.62)",
+        card_bg="rgba(255,255,252,0.68)", card_border="rgba(88,136,120,0.48)",
+        divider="🌿 · 🇨🇳 · 🌿",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="32px", tag_bg="rgba(72,112,96,0.18)", tag_color="#386858",
+        card_radius="16px", decor="grass", greeting="岁月静好",
+        footer="安然自在，诗意生活 🌿",
+    )
+
+    # ── 国庆第七天────────────────────────────────────────
+    H49 = make_style(
+        name="国庆流金", name_en="NationalDay07",
+        bg_grad=make_bg(["#FFF8F0","#FFECD8","#FFE0C0","#FFD4A8","#FFC890"]),
+        primary="#A06810", secondary="#B88018", accent="#D09820",
+        text="#6B4808", text_light="rgba(107,72,8,0.60)",
+        card_bg="rgba(255,252,240,0.72)", card_border="rgba(192,136,32,0.42)",
+        divider="✨ · 🏮 · ✨",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="32px", tag_bg="rgba(160,96,16,0.18)", tag_color="#A06810",
+        card_radius="16px", decor="sparkle", greeting="金色华章",
+        footer="流金岁月，与国同庆 ✨",
+    )
+
+    # ── 国庆第八天────────────────────────────────────────
+    H50 = make_style(
+        name="国庆收官", name_en="NationalDay08",
+        bg_grad=make_bg(["#F0F0F8","#DCDCE8","#C8C8D8","#B4B4C8","#A0A0B8"]),
+        primary="#3A4868", secondary="#4A5878", accent="#5A6888",
+        text="#1E2C40", text_light="rgba(30,44,64,0.62)",
+        card_bg="rgba(255,255,255,0.68)", card_border="rgba(90,104,136,0.48)",
+        divider="🌙 · 🇨🇳 · 🌙",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="32px", tag_bg="rgba(74,88,120,0.18)", tag_color="#3A4868",
+        card_radius="16px", decor="sparkle", greeting="与国同欢",
+        footer="明日再出发，奋斗正当时 🌙",
+    )
+
+    # ── 妇女节第三版───────────────────────────────────────
+    H51 = make_style(
+        name="妇女节紫罗", name_en="WomensDay03",
+        bg_grad=make_bg(["#FFF5F8","#FFE8F0","#FFD8E8","#FFC8E0","#FFB8D8"]),
+        primary="#A03080", secondary="#B84098", accent="#CC50B0",
+        text="#6C1858", text_light="rgba(108,24,88,0.62)",
+        card_bg="rgba(255,255,255,0.62)", card_border="rgba(200,80,176,0.52)",
+        divider="🌺 · 🌸 · 🌺",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="32px", tag_bg="rgba(176,56,144,0.18)", tag_color="#A03080",
+        card_radius="20px", decor="cherry", greeting="如花绽放",
+        footer="温柔且坚，闪闪发光 🌺",
+    )
+
+    # ── 元旦第二天（1月2日）───────────────────────────────
+    H52 = make_style(
+        name="元旦欢庆", name_en="NewYearDay02",
+        bg_grad=make_bg(["#FFF8F0","#FFECD8","#FFE0C0","#FFD4A8","#FFC890"]),
+        primary="#A06010", secondary="#B87818", accent="#CC9020",
+        text="#6B4808", text_light="rgba(107,72,8,0.60)",
+        card_bg="rgba(255,252,240,0.72)", card_border="rgba(192,136,32,0.42)",
+        divider="🎉 · 🎊 · 🎉",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="32px", tag_bg="rgba(160,96,16,0.18)", tag_color="#A06010",
+        card_radius="18px", decor="sparkle", greeting="新年快乐",
+        footer="好事发生，幸福绵长 🎉",
+    )
+
+    # ── 除夕（2月16日）/ 跨年夜（12月31日）────────────
+    H53 = make_style(
+        name="辞旧守岁", name_en="NewYearEve02",
+        bg_grad=make_bg(["#F8F0FF","#E8D8FF","#D8C0FF","#C8A8FF","#B890FF"]),
+        primary="#6020A0", secondary="#7838B8", accent="#9050D0",
+        text="#380C60", text_light="rgba(56,12,96,0.62)",
+        card_bg="rgba(255,252,255,0.62)", card_border="rgba(144,80,208,0.52)",
+        divider="🌟 · 🎆 · 🌟",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="32px", tag_bg="rgba(112,56,176,0.18)", tag_color="#6020A0",
+        card_radius="18px", decor="sparkle", greeting="守岁迎新",
+        footer="爆竹声中，辞旧迎新 🌟",
+    )
+
+
+    # ── 调休上班日风格（节假日调休补班）───────────────────
+    H54 = make_style(
+        name="补班提醒", name_en="HolidayWorkday",
+        bg_grad=make_bg(["#EEF4FF","#D8E8FF","#C2DCFF","#ACD0FF","#96C4FF"]),
+        primary="#1A4898", secondary="#2058B0", accent="#2868C8",
+        text="#0E2C60", text_light="rgba(14,44,96,0.62)",
+        card_bg="rgba(255,255,255,0.70)", card_border="rgba(40,104,200,0.45)",
+        divider="⚙ · ⚙ · ⚙",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="32px", tag_bg="rgba(32,88,168,0.18)", tag_color="#1A4898",
+        card_radius="16px", decor="grain", greeting="努力奋斗",
+        footer="安全出行 ⚙",
+    )
+
+    H55 = make_style(
+        name="补班提醒02", name_en="HolidayWorkday02",
+        bg_grad=make_bg(["#F0F8FF","#D8ECFF","#C0E0FF","#A8D4FF","#90C8FF"]),
+        primary="#1A50A0", secondary="#2060B8", accent="#2870D0",
+        text="#0E2C68", text_light="rgba(14,44,104,0.62)",
+        card_bg="rgba(255,255,255,0.70)", card_border="rgba(40,112,208,0.45)",
+        divider="📅 · 📅 · 📅",
+        greeting_font=FONT_DISPLAY, body_font=FONT_SERIF, label_font=FONT_SANS,
+        greeting_size="32px", tag_bg="rgba(32,96,176,0.18)", tag_color="#1A50A0",
+        card_radius="16px", decor="sparkle", greeting="补班日",
+        footer="调整作息，迎接明天 📅",
+    )
 
 # ============================================================
 # 主题列表 & 节日判断
@@ -1057,119 +1386,186 @@ REGULAR_STYLES = [
 ]
 
 HOLIDAY_STYLES = [
-    H.H01, H.H02, H.H03, H.H04, H.H05, H.H06, H.H07, H.H08,
-    H.H09, H.H10, H.H11, H.H12, H.H13, H.H14, H.H15, H.H16,
-    H.H17, H.H18, H.H19, H.H20, H.H21, H.H22, H.H23, H.H24,
-    H.H25, H.H26, H.H27, H.H27B, H.H28, H.H28B, H.H29, H.H30, H.H31, H.H32,
+    # 春节（7天）
+    H.H01, H.H02, H.H33, H.H34, H.H35, H.H36, H.H37,
+    # 元宵（2天）
+    H.H03, H.H04,
+    # 清明（3天）
+    H.H05, H.H06, H.H38,
+    # 端午（3天）
+    H.H07, H.H08, H.H39,
+    # 国庆（8天）
+    H.H13, H.H14, H.H45, H.H46, H.H47, H.H48, H.H49, H.H50,
+    # 重阳（2天）
+    H.H15, H.H16,
+    # 万圣（2天）
+    H.H17, H.H18,
+    # 感恩（2天）
+    H.H19, H.H20,
+    # 圣诞（2天）
+    H.H21, H.H22,
+    # 元旦（2天）
+    H.H23, H.H24, H.H52,
+    # 情人节（2天）
+    H.H25, H.H26,
+    # 妇女节（3天）
+    H.H27, H.H27B, H.H51,
+    # 劳动节（5天）
+    H.H28, H.H28B, H.H40, H.H41, H.H42,
+    # 儿童节（2天）
+    H.H29, H.H30,
+    # 七夕（2天，使用 H09 H10）
+    H.H09, H.H10,
+    # 教师节（2天）
+    H.H31, H.H32,
+    # 中秋（2天）
+    H.H11, H.H12,
+    # 除夕（1天）
+    H.H53,
 ]
 
 ALL_STYLES = HOLIDAY_STYLES + REGULAR_STYLES
 
 
-def get_style_for_date(date=None):
-    """根据日期返回对应主题（节日期间返回节日主题）"""
+# ──────────────────────────────────────────────────────────────────
+# 全局节假日映射：每个日期 → ([候选 style name_en, ...], 节假日名)
+# 同一天有多个候选时，运行时以日期 ordinal 为 seed 随机选一款（确定性随机，同天结果一致）
+# ──────────────────────────────────────────────────────────────────
+# 2026年节假日方案：
+#   春节 1/28-2/3（7天），清明 4/4-4/6（3天），劳动节 5/1-5/5（5天）
+#   端午 6/27-6/29（3天），中秋+国庆 10/1-10/8（8天）
+# ──────────────────────────────────────────────────────────────────
+_HOLIDAY_MAP = {
+    # 元旦（2天，各1款）
+    (1, 1): (['NewYearDay', 'NewYearEve'],    '元旦'),
+    (1, 2): (['NewYearDay02'],                '元旦'),
+    # 春节（7天，每天固定1款，各自主题独立）
+    (1, 28): (['SpringFestival01', 'SpringFestival02'], '春节'),
+    (1, 29): (['SpringFestival02', 'SpringFestival01'], '春节'),
+    (1, 30): (['SpringFestival03'], '春节'),
+    (1, 31): (['SpringFestival04'], '春节'),
+    (2, 1):  (['SpringFestival05'], '春节'),
+    (2, 2):  (['SpringFestival06'], '春节'),
+    (2, 3):  (['SpringFestival07'], '春节'),
+    # 除夕
+    (2, 16): (['NewYearEve02', 'NewYearEve'], '除夕'),
+    # 元宵（2天，各2款随机）
+    (2, 12): (['Lantern01', 'Lantern02'], '元宵节'),
+    (2, 13): (['Lantern02', 'Lantern01'], '元宵节'),
+    # 情人节（1天，2款随机）
+    (2, 14): (['Valentine01', 'Valentine02'], '情人节'),
+    # 妇女节（2天，各2款随机）
+    (3, 8):  (['WomensDay01', 'WomensDay02'], '妇女节'),
+    (3, 9):  (['WomensDay03', 'WomensDay01'], '妇女节'),
+    # 清明（3天，每天1-2款）
+    (4, 4): (['Qingming01', 'Qingming02'], '清明'),
+    (4, 5): (['Qingming02', 'Qingming01'], '清明'),
+    (4, 6): (['Qingming03', 'Qingming02'], '清明'),
+    # 劳动节（5天）
+    (5, 1):  (['LaborDay01', 'LaborDay02'], '劳动节'),
+    (5, 2):  (['LaborDay02', 'LaborDay01'], '劳动节'),
+    (5, 3):  (['LaborDay03'], '劳动节'),
+    (5, 4):  (['LaborDay04'], '劳动节'),
+    (5, 5):  (['LaborDay05'], '劳动节'),
+    # 儿童节（1天，2款随机）
+    (6, 1):  (['ChildrensDay', 'ChildrensDay02'], '儿童节'),
+    # 端午（3天）
+    (6, 27): (['DragonBoat01', 'DragonBoat02'], '端午'),
+    (6, 28): (['DragonBoat02', 'DragonBoat01'], '端午'),
+    (6, 29): (['DragonBoat03', 'DragonBoat02'], '端午'),
+    # 七夕（1天，2款随机）
+    (8, 25): (['Qixi01', 'Qixi02'], '七夕节'),
+    # 教师节（1天，2款随机）
+    (9, 10): (['TeachersDay01', 'TeachersDay02'], '教师节'),
+    # 中秋（1天，2款随机）
+    (9, 28): (['MidAutumn01', 'MidAutumn02'], '中秋'),
+    # 国庆（8天，每天1-2款）
+    (10, 1):  (['NationalDay01', 'NationalDay02'], '国庆'),
+    (10, 2):  (['NationalDay02', 'NationalDay01'], '国庆'),
+    (10, 3):  (['NationalDay03'], '国庆'),
+    (10, 4):  (['NationalDay04'], '国庆'),
+    (10, 5):  (['NationalDay05'], '国庆'),
+    (10, 6):  (['NationalDay06'], '国庆'),
+    (10, 7):  (['NationalDay07'], '国庆'),
+    (10, 8):  (['NationalDay08'], '国庆'),
+    # 重阳（1天，2款随机）
+    (10, 11): (['DoubleNinth01', 'DoubleNinth02'], '重阳节'),
+    # 万圣（1天，2款随机）
+    (10, 31): (['Halloween01', 'Halloween02'], '万圣节'),
+    # 感恩节（修正：2026年11月26日，2款随机）
+    (11, 26): (['Thanksgiving01', 'Thanksgiving02'], '感恩节'),
+    # 圣诞节（1天，2款随机）
+    (12, 25): (['Christmas01', 'Christmas02'], '圣诞节'),
+    # 跨年夜
+    (12, 31): (['NewYearEve', 'NewYearEve02'], '跨年夜'),
+}
+
+
+def get_style_by_name(name):
+    """根据 style name_en 查找 H 风格对象"""
+    # 先尝试直接 getattr(H, name)
+    for attr in dir(H):
+        obj = getattr(H, attr)
+        if isinstance(obj, dict) and obj.get('name_en') == name:
+            return obj
+    # Fallback: scan HOLIDAY_STYLES
+    for s in HOLIDAY_STYLES:
+        if s.get('name_en') == name:
+            return s
+    return HOLIDAY_STYLES[0]
+
+
+def is_holiday(date=None):
+    """判断是否为节假日"""
     if date is None:
-        date = datetime.date.today()
+        date = bj_date()
+    return (date.month, date.day) in _HOLIDAY_MAP
+
+
+def get_holiday_name(date=None):
+    """获取节假日名称（如'春节'、'清明'）"""
+    if date is None:
+        date = bj_date()
+    info = _HOLIDAY_MAP.get((date.month, date.day))
+    return info[1] if info else ''
+
+
+def _pick_style_name(date):
+    """从候选列表中随机选一个 style name_en（以日期 ordinal 为 seed，确保同天结果一致）"""
+    info = _HOLIDAY_MAP.get((date.month, date.day))
+    if not info:
+        return ''
+    candidates = info[0]  # list of name_en strings
+    if len(candidates) == 1:
+        return candidates[0]
+    rng = random.Random(date.toordinal())
+    return rng.choice(candidates)
+
+
+def get_holiday_style_name(date=None):
+    """获取节假日当天随机选定的 style name_en"""
+    if date is None:
+        date = bj_date()
+    return _pick_style_name(date)
+
+
+def get_style_for_date(date=None):
+    """根据日期返回主题：节假日→随机节日风格，工作日→轮换常规风格"""
+    if date is None:
+        date = bj_date()
     if is_holiday(date):
-        styles = get_holiday_styles(date)
-        if styles:
-            return styles[0]
-        return HOLIDAY_STYLES[0]
+        name = _pick_style_name(date)
+        return get_style_by_name(name)
     day_of_year = (date - datetime.date(date.year, 1, 1)).days + 1
     idx = (day_of_year - 1) % len(REGULAR_STYLES)
     return REGULAR_STYLES[idx]
 
 
 def get_holiday_styles(date=None):
-    """获取某日期对应的节日主题列表（1-2个），用于节日期间同时推送多款供选择"""
+    """返回该日期对应的节日风格列表（节假日=1个随机选定；非节日=空列表）"""
     if date is None:
-        date = datetime.date.today()
+        date = bj_date()
     if not is_holiday(date):
         return []
-    
-    m, d = date.month, date.day
-    
-    # 定义节日主题对
-    holiday_pairs = {
-        # 春节
-        (1, 28): [H.H01, H.H02],
-        (1, 29): [H.H01, H.H02],
-        # 元宵
-        (2, 12): [H.H03, H.H04],
-        (2, 13): [H.H03, H.H04],
-        # 情人节
-        (2, 14): [H.H25, H.H26],
-        # 妇女节
-        (3, 8): [H.H27, H.H27B],
-        # 清明
-        (4, 5): [H.H05, H.H06],
-        (4, 6): [H.H05, H.H06],
-        # 劳动节
-        (5, 1): [H.H28, H.H28B],
-        # 端午
-        (5, 31): [H.H07, H.H08],
-        # 儿童节
-        (6, 1): [H.H29, H.H30],
-        # 七夕
-        (8, 25): [H.H09, H.H10],
-        # 教师节
-        (9, 10): [H.H31, H.H32],
-        # 中秋
-        (9, 28): [H.H11, H.H12],
-        # 国庆
-        (10, 1): [H.H13, H.H14],
-        # 重阳
-        (10, 11): [H.H15, H.H16],
-        # 万圣
-        (10, 31): [H.H17, H.H18],
-        # 感恩节
-        (11, 24): [H.H19, H.H20],
-        # 圣诞节
-        (12, 25): [H.H21, H.H22],
-        # 元旦
-        (12, 31): [H.H23, H.H24],
-    }
-    
-    return holiday_pairs.get((m, d), [HOLIDAY_STYLES[0]])
-
-
-def is_holiday(date=None):
-    if date is None:
-        date = datetime.date.today()
-    m, d = date.month, date.day
-    holidays = {
-        (1, 1): 'NewYearDay', (1, 28): 'SpringFestival01', (1, 29): 'SpringFestival02',
-        (2, 12): 'Lantern01', (2, 13): 'Lantern02', (2, 14): 'Valentine01',
-        (3, 8): 'WomensDay',
-        (4, 5): 'Qingming01', (4, 6): 'Qingming02',
-        (5, 1): 'LaborDay', (5, 31): 'DragonBoat01', (6, 1): 'ChildrensDay',
-        (8, 25): 'Qixi01', (9, 10): 'TeachersDay01',
-        (9, 28): 'MidAutumn01', (10, 1): 'NationalDay01',
-        (10, 11): 'DoubleNinth01', (10, 31): 'Halloween01',
-        (11, 24): 'Thanksgiving01',
-        (12, 25): 'Christmas01', (12, 31): 'NewYearEve',
-    }
-    return (m, d) in holidays
-
-
-def _match_holiday(date, holiday_en):
-    m, d = date.month, date.day
-    mapping = {
-        'NewYearDay': (1, 1), 'SpringFestival01': (1, 28), 'SpringFestival02': (1, 29),
-        'Lantern01': (2, 12), 'Lantern02': (2, 13),
-        'Valentine01': (2, 14), 'Valentine02': (2, 14),
-        'WomensDay': (3, 8),
-        'Qingming01': (4, 5), 'Qingming02': (4, 6),
-        'LaborDay': (5, 1), 'DragonBoat01': (5, 31), 'DragonBoat02': (5, 31),
-        'ChildrensDay': (6, 1), 'ChildrensDay02': (6, 1),
-        'Qixi01': (8, 25), 'Qixi02': (8, 25),
-        'TeachersDay01': (9, 10), 'TeachersDay02': (9, 10),
-        'MidAutumn01': (9, 28), 'MidAutumn02': (9, 28),
-        'NationalDay01': (10, 1), 'NationalDay02': (10, 1),
-        'DoubleNinth01': (10, 11), 'DoubleNinth02': (10, 11),
-        'Halloween01': (10, 31), 'Halloween02': (10, 31),
-        'Thanksgiving01': (11, 24), 'Thanksgiving02': (11, 24),
-        'Christmas01': (12, 25), 'Christmas02': (12, 25),
-        'NewYearEve': (12, 31),
-    }
-    return mapping.get(holiday_en, (0, 0)) == (m, d)
+    name = _pick_style_name(date)
+    return [get_style_by_name(name)]

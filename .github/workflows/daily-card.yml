@@ -1,7 +1,13 @@
 name: Daily Card
 
-on:
+'on':
   workflow_dispatch:
+  schedule:
+    # 每天 9:30 AM 北京时间 = 01:30 UTC
+    - cron: '30 1 * * *'
+  push:
+    paths:
+      - '.trigger-marker'
 
 jobs:
   run:
@@ -30,8 +36,10 @@ jobs:
           playwright install msedge --with-deps
 
       - name: Diagnostic - WeChat API
+        env:
+          PYTHONIOENCODING: utf-8
         run: |
-          python -c "import requests; r = requests.post('https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=4a41bb57-cabb-4d9a-a7be-1d33064bf98b', json={'msgtype':'text','text':{'content':'[云端诊断] 测试消息'}}, timeout=10); print('WECHAT_STATUS:', r.status_code, r.json())"
+          python -c "import requests; from datetime import datetime, timezone, timedelta; bj_now = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=8))); msg = bj_now.strftime('%m%d') + '日早安推送，请及时发布朋友圈'; r = requests.post('https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=4a41bb57-cabb-4d9a-a7be-1d33064bf98b', json={'msgtype': 'text', 'text': {'content': '[云端诊断] ' + msg}}, timeout=10); print('WECHAT_STATUS:', r.status_code, r.json())"
 
       - name: Run daily card generator
         env:
