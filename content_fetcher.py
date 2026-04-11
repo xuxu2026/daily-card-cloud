@@ -1638,31 +1638,32 @@ def _get_fallback_beauty(count: int) -> list:
     获取本地美文
     节日优先（1条）+ 季节美文（1条）+ 通用美文填库（剩余条）
     核心改进：通用美文作为主力填库，避免单一季节美文的审美疲劳
+    使用 date.toordinal() 做种子，包含年份信息，避免每年同天重复
     """
     from datetime import date
     texts = []
 
     today = date.today()
-    day_of_year = today.timetuple().tm_yday
+    seed = today.toordinal()  # 包含年份，每天唯一，不会跨年重复
 
     # Slot 1: 节日美文（节日当天）
     if _is_holiday():
         holiday_texts = BEAUTY_TEXTS.get("holiday", [])
-        idx = (day_of_year * 47) % len(holiday_texts)
+        idx = (seed * 47) % len(holiday_texts)
         texts.append(holiday_texts[idx])
 
     # Slot 2: 季节美文（保持季节感）
     season = _get_season()
     season_texts = BEAUTY_TEXTS.get(season, [])
     if season_texts:
-        idx = (day_of_year * 31) % len(season_texts)
+        idx = (seed * 31) % len(season_texts)
         texts.append(season_texts[idx])
 
     # Slots 3+: 通用美文填库（解决审美疲劳的主力军）
     universal_texts = BEAUTY_TEXTS.get("universal", [])
     if universal_texts:
         for i in range(count - len(texts)):
-            idx = (day_of_year * 17 + i) % len(universal_texts)
+            idx = (seed * 17 + i * 83) % len(universal_texts)
             texts.append(universal_texts[idx])
 
     return texts
@@ -1671,27 +1672,27 @@ def _get_fallback_beauty(count: int) -> list:
 def _get_fallback_skincare(count: int) -> list:
     """
     获取本地护肤贴士
-    节日优先（1条）+ 季节贴士（1条）+ 通用贴士填库（剩余条）
-    核心改进：通用护肤贴士作为主力填库，丰富多样性
+    季节贴士（1条）+ 通用贴士填库（剩余条）
+    使用 date.toordinal() 做种子，包含年份信息，避免每年同天重复
     """
     from datetime import date
     tips = []
 
     today = date.today()
-    day_of_year = today.timetuple().tm_yday
+    seed = today.toordinal()  # 包含年份，每天唯一，不会跨年重复
 
     # Slot 1: 季节护肤贴士（保持季节感）
     season = _get_season()
     season_tips = SKINCARE_TIPS.get(season, [])
     if season_tips:
-        idx = (day_of_year * 29) % len(season_tips)
+        idx = (seed * 29) % len(season_tips)
         tips.append(season_tips[idx])
 
     # Slots 2+: 通用护肤贴士填库（丰富多样）
     universal_tips = SKINCARE_TIPS.get("universal", [])
     if universal_tips:
         for i in range(count - len(tips)):
-            idx = (day_of_year * 13 + i) % len(universal_tips)
+            idx = (seed * 13 + i * 97) % len(universal_tips)
             tips.append(universal_tips[idx])
 
     return tips
