@@ -7,6 +7,7 @@
 
 import random
 from datetime import datetime
+import config  # 用 bj_date() 确保北京时间，云端不会因UTC偏移重复
 
 # 美文库
 BEAUTY_TEXTS = {
@@ -1640,10 +1641,9 @@ def _get_fallback_beauty(count: int) -> list:
     核心改进：通用美文作为主力填库，避免单一季节美文的审美疲劳
     使用 date.toordinal() 做种子，包含年份信息，避免每年同天重复
     """
-    from datetime import date
     texts = []
 
-    today = date.today()
+    today = config.bj_date()  # 北京时间，云端也不会因UTC偏移导致重复
     seed = today.toordinal()  # 包含年份，每天唯一，不会跨年重复
 
     # Slot 1: 节日美文（节日当天）
@@ -1675,10 +1675,9 @@ def _get_fallback_skincare(count: int) -> list:
     季节贴士（1条）+ 通用贴士填库（剩余条）
     使用 date.toordinal() 做种子，包含年份信息，避免每年同天重复
     """
-    from datetime import date
     tips = []
 
-    today = date.today()
+    today = config.bj_date()  # 北京时间，云端也不会因UTC偏移导致重复
     seed = today.toordinal()  # 包含年份，每天唯一，不会跨年重复
 
     # Slot 1: 季节护肤贴士（保持季节感）
